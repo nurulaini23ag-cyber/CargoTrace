@@ -164,3 +164,4 @@
 - [2026-10-22 14:40:00] Session #4: perf(cache): optimize TTL parameters for external geocoding and weather queries
 - [2026-10-22 16:05:00] Session #5: chore(config): adjust session lifetime parameters and environment fallbacks
 - [2026-10-22 17:30:00] Session #6: test(integration): verify state transition constraints and terminal immutability
+- [2026-10-22 19:10:00] Session #7: docs(arch): clarify service layer boundaries and dependency injection patterns
