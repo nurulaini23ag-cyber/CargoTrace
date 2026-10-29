@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cargotrace_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    networks:
+      - cargotrace_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: cargotrace_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - cargotrace_net
+
+  mysql:
+    image: mysql:8.0
+    container_name: cargotrace_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: cargotrace
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: cargotrace_user
+      MYSQL_PASSWORD: cargotrace_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - cargotrace_net
+
+networks:
+  cargotrace_net:
+    driver: bridge
+
+volumes:
+  db_data:
+    driver: local
