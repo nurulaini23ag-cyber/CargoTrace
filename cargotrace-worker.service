@@ -1,0 +1,12 @@
+[Unit]
+Description=CargoTrace Background Queue & Delay Worker
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+Restart=always
+ExecStart=/usr/bin/php /var/www/cargotrace/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+
+[Install]
+WantedBy=multi-user.target
