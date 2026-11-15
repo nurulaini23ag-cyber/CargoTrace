@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CarrierController;
 use App\Http\Controllers\Api\ExceptionController;
+use App\Http\Controllers\Api\HealthCheckController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\ShipmentController;
 use App\Services\ExternalApiService;
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\Route;
 | CargoTrace REST API Routes (Slide 12 & 13)
 |--------------------------------------------------------------------------
 */
+
+// System Diagnostics & Health Check
+Route::get('/health', [HealthCheckController::class, 'check']);
 
 // Public Authentication Endpoints
 Route::post('/register', [AuthController::class, 'register']);
