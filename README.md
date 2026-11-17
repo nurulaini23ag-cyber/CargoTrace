@@ -4,10 +4,22 @@
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B%20%7C%208.3%2B-indigo.svg)](https://www.php.net)
 [![Laravel](https://img.shields.io/badge/Laravel-12%2B-red.svg)](https://laravel.com)
 [![REST API](https://img.shields.io/badge/REST%20API-Sanctum%20Authenticated-emerald.svg)](https://laravel.com/docs/sanctum)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](docker-compose.yml)
+[![CI](https://img.shields.io/badge/GitHub_Actions-Automated_Tests-brightgreen.svg)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
 
 > **Web Programming 2 • UAS Final Project**  
 > Built as an enterprise-grade software engineering portfolio project demonstrating architectural separation of concerns, deterministic business rules, geographic mapping, external API integration, automated testing, and role-based access control.
+
+### Supplementary Technical Documentation:
+- 📊 **[Entity-Relationship Diagram & Data Dictionary](docs/erd.md)**
+- 🏗️ **[Layered Service Architecture Guide](docs/architecture.md)**
+- 📡 **[Full REST API Specification & Endpoints](docs/api-documentation.md)**
+- 🎯 **[UAS Defense & Code Ownership Interview Q&A](docs/uas-defense-guide.md)**
+- 🧭 **[Academic Group Scenarios Matrix (A, B, C)](docs/scenarios.md)**
+- ⚡ **[Performance Benchmarking & Caching Guide](docs/performance.md)**
+- 📜 **[Project Changelog & Semantic Versioning](CHANGELOG.md)**
+- 📋 **[Final Submission Manifest](docs/submission-manifest.md)**
 
 ---
 
