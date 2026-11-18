@@ -368,3 +368,4 @@
 - [2026-11-18 16:05:00] Session #5: docs(api): update endpoint payload specifications and schema definitions
 - [2026-11-18 17:30:00] Session #6: style(ui): improve responsive layout typography, badge contrasts, and margins
 - [2026-11-18 19:10:00] Session #7: feat(validation): strengthen form request sanitization and CSRF token verification
+- [2026-11-18 20:25:00] Session #8: perf(cache): optimize TTL parameters for external geocoding and weather queries
