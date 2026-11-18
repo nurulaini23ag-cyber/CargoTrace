@@ -361,3 +361,4 @@
 - [2026-11-17 17:30:00] Session #5: test(unit): add boundary condition validation and assertion coverage
 - [2026-11-17 19:10:00] Session #6: docs(api): update endpoint payload specifications and schema definitions
 - [2026-11-17 20:25:00] Session #7: style(ui): improve responsive layout typography, badge contrasts, and margins
+- [2026-11-18 09:50:00] Session #1: docs(arch): clarify service layer boundaries and dependency injection patterns
