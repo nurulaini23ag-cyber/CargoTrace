@@ -376,3 +376,4 @@
 - [2026-11-19 14:25:00 +0700] style(blade): enhance dashboard KPI card hover elevation and accessibility focus rings
 - [2026-11-19 15:40:00 +0700] docs(erd): document cascade delete rules and foreign key constraints in ERD reference
 - [2026-11-19 16:55:00 +0700] refactor(controller): extract common shipment filter queries into reusable query scopes
+- [2026-11-19 18:20:00 +0700] test(api): assert Sanctum token bearer authentication error formats and HTTP 401 handling
