@@ -375,3 +375,4 @@
 - [2026-11-19 13:10:00 +0700] fix(validation): verify ISO 8601 strictness on shipment estimated arrival timestamps
 - [2026-11-19 14:25:00 +0700] style(blade): enhance dashboard KPI card hover elevation and accessibility focus rings
 - [2026-11-19 15:40:00 +0700] docs(erd): document cascade delete rules and foreign key constraints in ERD reference
+- [2026-11-19 16:55:00 +0700] refactor(controller): extract common shipment filter queries into reusable query scopes
