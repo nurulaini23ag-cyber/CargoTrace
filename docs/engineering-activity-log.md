@@ -372,3 +372,4 @@
 - [2026-11-19 09:15:00 +0700] test(qa): add end-to-end scenario validation for multi-leg maritime freight
 - [2026-11-19 10:30:00 +0700] docs(defense): expand UAS oral examination preparation notes for database normalization
 - [2026-11-19 11:45:00 +0700] perf(db): add composite index recommendations for shipment tracking queries
+- [2026-11-19 13:10:00 +0700] fix(validation): verify ISO 8601 strictness on shipment estimated arrival timestamps
