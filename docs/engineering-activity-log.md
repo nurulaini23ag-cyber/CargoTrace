@@ -380,3 +380,4 @@
 - [2026-11-19 20:05:00 +0700] chore(maintenance): audit composer dependencies and remove unused testing stubs
 - [2026-11-20 09:20:00 +0700] feat(seeder): refine mock port congestion timelines for Group Scenario B vessels
 - [2026-11-20 10:45:00 +0700] docs(readme): add troubleshooting section for local SQLite and MySQL switching
+- [2026-11-20 11:50:00 +0700] test(service): verify EtaService delay threshold calculation under edge boundary hours
