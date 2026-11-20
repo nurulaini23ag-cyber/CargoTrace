@@ -378,3 +378,4 @@
 - [2026-11-19 16:55:00 +0700] refactor(controller): extract common shipment filter queries into reusable query scopes
 - [2026-11-19 18:20:00 +0700] test(api): assert Sanctum token bearer authentication error formats and HTTP 401 handling
 - [2026-11-19 20:05:00 +0700] chore(maintenance): audit composer dependencies and remove unused testing stubs
+- [2026-11-20 09:20:00 +0700] feat(seeder): refine mock port congestion timelines for Group Scenario B vessels
