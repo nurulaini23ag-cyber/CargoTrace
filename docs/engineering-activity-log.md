@@ -379,3 +379,4 @@
 - [2026-11-19 18:20:00 +0700] test(api): assert Sanctum token bearer authentication error formats and HTTP 401 handling
 - [2026-11-19 20:05:00 +0700] chore(maintenance): audit composer dependencies and remove unused testing stubs
 - [2026-11-20 09:20:00 +0700] feat(seeder): refine mock port congestion timelines for Group Scenario B vessels
+- [2026-11-20 10:45:00 +0700] docs(readme): add troubleshooting section for local SQLite and MySQL switching
