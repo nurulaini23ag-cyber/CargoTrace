@@ -386,3 +386,4 @@
 - [2026-11-20 15:50:00 +0700] docs(api): document query parameters for public tracking tokenless endpoint
 - [2026-11-20 17:10:00 +0700] perf(view): precompile SVG icon paths into reusable Blade components
 - [2026-11-20 18:40:00 +0700] test(security): assert rate limiting behavior on repeated public tracking inquiries
+- [2026-11-20 20:15:00 +0700] chore(git): standardize git attributes for cross-platform Windows and Unix line endings
