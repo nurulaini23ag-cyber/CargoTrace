@@ -383,3 +383,4 @@
 - [2026-11-20 11:50:00 +0700] test(service): verify EtaService delay threshold calculation under edge boundary hours
 - [2026-11-20 13:15:00 +0700] style(theme): harmonize slate palette shades across mobile modal dialogs
 - [2026-11-20 14:35:00 +0700] refactor(model): declare explicit cast attributes for shipment items decimal weights
+- [2026-11-20 15:50:00 +0700] docs(api): document query parameters for public tracking tokenless endpoint
