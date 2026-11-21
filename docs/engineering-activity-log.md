@@ -389,3 +389,4 @@
 - [2026-11-20 20:15:00 +0700] chore(git): standardize git attributes for cross-platform Windows and Unix line endings
 - [2026-11-21 09:10:00 +0700] docs(manifest): verify submission manifest checksums and file hierarchy inventory
 - [2026-11-21 10:25:00 +0700] test(unit): test exception incident status transitions from OPEN to INVESTIGATING
+- [2026-11-21 11:40:00 +0700] feat(logging): add structured context metadata to audit trail event logging
