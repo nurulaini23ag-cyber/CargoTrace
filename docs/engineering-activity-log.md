@@ -391,3 +391,4 @@
 - [2026-11-21 10:25:00 +0700] test(unit): test exception incident status transitions from OPEN to INVESTIGATING
 - [2026-11-21 11:40:00 +0700] feat(logging): add structured context metadata to audit trail event logging
 - [2026-11-21 13:05:00 +0700] refactor(service): streamline ExternalApiService weather error fallbacks
+- [2026-11-21 14:20:00 +0700] docs(uas): add presentation talking points for slide 14 exception handling workflows
