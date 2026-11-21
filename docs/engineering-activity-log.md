@@ -395,3 +395,4 @@
 - [2026-11-21 15:35:00 +0700] style(css): adjust leaflet map popups container max-width on tablet screens
 - [2026-11-21 16:50:00 +0700] test(model): verify Carrier active scope and shipment relationship cascade logic
 - [2026-11-21 18:15:00 +0700] docs(architecture): supplement layer diagram with event-driven notification lifecycle
+- [2026-11-21 19:50:00 +0700] perf(query): benchmark tracking timeline queries and enforce primary key ordering
