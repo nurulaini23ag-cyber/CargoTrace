@@ -393,3 +393,4 @@
 - [2026-11-21 13:05:00 +0700] refactor(service): streamline ExternalApiService weather error fallbacks
 - [2026-11-21 14:20:00 +0700] docs(uas): add presentation talking points for slide 14 exception handling workflows
 - [2026-11-21 15:35:00 +0700] style(css): adjust leaflet map popups container max-width on tablet screens
+- [2026-11-21 16:50:00 +0700] test(model): verify Carrier active scope and shipment relationship cascade logic
