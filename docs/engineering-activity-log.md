@@ -401,3 +401,4 @@
 - [2026-11-22 12:15:00 +0700] test(feature): verify shipment creation redirects to tracking timeline view
 - [2026-11-22 13:45:00 +0700] refactor(auth): simplify demo credentials auto-fill button behavior on login screen
 - [2026-11-22 15:00:00 +0700] style(navigation): improve breadcrumb typography and active route indicators
+- [2026-11-22 16:30:00 +0700] docs(defense): finalize question-and-answer checklist for lecturer evaluation
