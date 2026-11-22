@@ -10,14 +10,25 @@ class ShipmentItem extends Model
 {
     use HasFactory;
 
+    public const CATEGORY_COCOA = 'COCOA';
+    public const CATEGORY_COFFEE = 'COFFEE';
+
     protected $fillable = [
         'shipment_id',
+        'product_category',
+        'product_name',
+        'variety',
+        'grade',
         'item_description',
         'hs_code',
         'quantity',
         'package_type',
+        'package_count',
+        'net_weight',
         'weight_kg',
         'volume_cbm',
+        'moisture_content',
+        'temperature_target',
         'is_hazardous',
     ];
 
@@ -25,8 +36,12 @@ class ShipmentItem extends Model
     {
         return [
             'quantity' => 'integer',
+            'package_count' => 'integer',
+            'net_weight' => 'float',
             'weight_kg' => 'float',
             'volume_cbm' => 'float',
+            'moisture_content' => 'float',
+            'temperature_target' => 'float',
             'is_hazardous' => 'boolean',
         ];
     }
@@ -34,5 +49,15 @@ class ShipmentItem extends Model
     public function shipment(): BelongsTo
     {
         return $this->belongsTo(Shipment::class, 'shipment_id');
+    }
+
+    public function isCocoa(): bool
+    {
+        return strtoupper($this->product_category) === self::CATEGORY_COCOA;
+    }
+
+    public function isCoffee(): bool
+    {
+        return strtoupper($this->product_category) === self::CATEGORY_COFFEE;
     }
 }
