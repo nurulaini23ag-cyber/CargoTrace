@@ -253,8 +253,61 @@
                     </div>
                 </div>
 
-                <!-- Leaflet Map Canvas -->
-                <div id="shipment-map" class="h-96 w-full z-10"></div>
+                <!-- Shopee-Style Live Vessel Sailing Controls Bar -->
+                <div class="px-4 py-2.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2.5 text-xs border-b border-slate-800">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-[#C49A55] flex items-center gap-1">
+                            <span>⚡</span> LIVE SAILING SIMULATOR
+                        </span>
+                        <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+                            <button id="btn-play-pause" type="button" class="px-2.5 py-1 rounded bg-[#C49A55] text-slate-900 font-extrabold text-[11px] hover:bg-[#b38944] transition flex items-center gap-1 shadow-xs">
+                                <span id="play-icon">⏸️</span> <span id="play-text">Jeda</span>
+                            </button>
+                            <button id="btn-restart" type="button" class="px-2 py-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 text-[11px] font-bold transition flex items-center gap-1" title="Ulangi pelayaran dari pelabuhan asal">
+                                <span>🔄</span> Ulangi
+                            </button>
+                            <button id="btn-jump-now" type="button" class="px-2 py-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 text-[11px] font-bold transition flex items-center gap-1" title="Lompat ke posisi kargo saat ini">
+                                <span>🎯</span> Posisi Terkini
+                            </button>
+                        </div>
+
+                        <!-- Speed selector -->
+                        <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 border border-slate-700 text-[10px]">
+                            <span class="text-slate-400 px-1 font-bold">Speed:</span>
+                            <button type="button" onclick="setSailingSpeed(1)" class="speed-btn px-1.5 py-0.5 rounded font-bold transition bg-[#C49A55] text-slate-900" id="speed-1">1x</button>
+                            <button type="button" onclick="setSailingSpeed(2)" class="speed-btn px-1.5 py-0.5 rounded font-bold transition text-slate-300 hover:text-white" id="speed-2">2x</button>
+                            <button type="button" onclick="setSailingSpeed(4)" class="speed-btn px-1.5 py-0.5 rounded font-bold transition text-slate-300 hover:text-white" id="speed-4">4x</button>
+                        </div>
+                    </div>
+
+                    <!-- World Map Theme Selector -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase hidden sm:inline">Peta Dunia:</span>
+                        <select id="world-map-style" onchange="changeMapTheme(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1 text-[11px] font-semibold focus:outline-none focus:ring-1 focus:ring-[#C49A55] cursor-pointer">
+                            <option value="voyager" selected>🗺️ Peta Dunia Voyager (Default)</option>
+                            <option value="dark">🌙 Dark Maritime Chart</option>
+                            <option value="osm">🧭 OpenStreetMap Classic</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Leaflet Map Canvas with Telemetry Overlay -->
+                <div class="relative w-full">
+                    <!-- Live Telemetry HUD Bar on Top of Map -->
+                    <div class="absolute top-3 left-14 z-20 bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-[#C49A55]/40 shadow-lg text-[11px] flex items-center gap-3 pointer-events-none">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span class="font-extrabold text-[#E8D7B9]">KAPAL BERLAYAR (LIVE):</span>
+                            <span class="font-mono text-white font-bold" id="telemetry-coords">Lat: {{ number_format($currentPos['latitude'], 4) }}°, Lon: {{ number_format($currentPos['longitude'], 4) }}°</span>
+                        </div>
+                        <span class="text-slate-500">|</span>
+                        <span class="text-[#C49A55] font-bold" id="telemetry-speed">Kecepatan: 19.4 Knots</span>
+                        <span class="text-slate-500 hidden md:inline">|</span>
+                        <span class="text-slate-300 hidden md:inline">Status: <strong id="telemetry-leg">High Seas Transit</strong></span>
+                    </div>
+
+                    <div id="shipment-map" class="h-[520px] w-full z-10"></div>
+                </div>
 
                 <div class="p-3 bg-slate-50 text-[11px] text-slate-600 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-3">
@@ -722,129 +775,384 @@
         document.getElementById('resolve-modal').classList.remove('hidden');
     }
 
+    let map;
+    let currentTileLayer;
+    let tileProviders = {};
+    let animationInterval = null;
+    let densePoints = [];
+    let curStepIndex = 0;
+    let sailingSpeed = 1;
+    let isSailingPlaying = true;
+    let movingVesselMarker = null;
+    let traveledPolyline = null;
+    let plannedPolyline = null;
+
+    function setSailingSpeed(multiplier) {
+        sailingSpeed = multiplier;
+        document.querySelectorAll('.speed-btn').forEach(b => {
+            b.classList.remove('bg-[#C49A55]', 'text-slate-900');
+            b.classList.add('text-slate-300');
+        });
+        const activeBtn = document.getElementById('speed-' + multiplier);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-[#C49A55]', 'text-slate-900');
+            activeBtn.classList.remove('text-slate-300');
+        }
+    }
+
+    function changeMapTheme(theme) {
+        if (!map || !tileProviders[theme]) return;
+        if (currentTileLayer) {
+            map.removeLayer(currentTileLayer);
+        }
+        currentTileLayer = tileProviders[theme];
+        currentTileLayer.addTo(map);
+    }
+
+    // High precision nautical bearing between two points
+    function calculateBearing(lat1, lon1, lat2, lon2) {
+        const toRad = Math.PI / 180;
+        const toDeg = 180 / Math.PI;
+        const dLon = (lon2 - lon1) * toRad;
+        const y = Math.sin(dLon) * Math.cos(lat2 * toRad);
+        const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) -
+                  Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLon);
+        return (Math.atan2(y, x) * toDeg + 360) % 360;
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        // Prepare Leaflet map
         const originLat = {{ $shipment->origin->latitude }};
         const originLon = {{ $shipment->origin->longitude }};
         const destLat = {{ $shipment->destination->latitude }};
         const destLon = {{ $shipment->destination->longitude }};
 
-        // Coordinates array for polyline
-        const routeCoords = [
+        const currentLat = {{ $currentPos['latitude'] }};
+        const currentLon = {{ $currentPos['longitude'] }};
+        const currentLocationName = {!! json_encode($currentPos['location_name']) !!};
+        const currentProgress = {{ $currentPos['progress_percent'] }};
+        const vesselName = {!! json_encode($shipment->vessel_name ?? $shipment->vessel_carrier ?? 'MSC Amsterdam') !!};
+
+        // Complete voyage milestones array
+        const rawRoutePoints = [
             [originLat, originLon]
         ];
 
-        // Center map midway
-        const centerLat = (originLat + destLat) / 2;
-        const centerLon = (originLon + destLon) / 2;
+        // Add intermediate tracking waypoints
+        @foreach($shipment->trackingEvents as $ev)
+            @if($ev->latitude && $ev->longitude)
+                rawRoutePoints.push([{{ $ev->latitude }}, {{ $ev->longitude }}]);
+            @endif
+        @endforeach
 
-        const map = L.map('shipment-map').setView([centerLat, centerLon], 3);
+        // Ensure current real-world position is included in the nautical route
+        rawRoutePoints.push([currentLat, currentLon]);
+        rawRoutePoints.push([destLat, destLon]);
 
-        // OpenStreetMap Tile Layer with mandatory attribution
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Remove immediate duplicates if any
+        const cleanedWaypoints = [];
+        for (let i = 0; i < rawRoutePoints.length; i++) {
+            if (i === 0 || rawRoutePoints[i][0] !== rawRoutePoints[i-1][0] || rawRoutePoints[i][1] !== rawRoutePoints[i-1][1]) {
+                cleanedWaypoints.push(rawRoutePoints[i]);
+            }
+        }
+
+        // Initialize World Map Leaflet Instance
+        map = L.map('shipment-map', {
+            center: [(originLat + destLat) / 2, (originLon + destLon) / 2],
+            zoom: 3,
+            minZoom: 2,
             maxZoom: 18,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+            worldCopyJump: true
+        });
 
-        // Origin marker (Green)
+        // World Map Basemap Tile Providers
+        tileProviders = {
+            voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }),
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }),
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            })
+        };
+
+        // Default to Voyager World Map
+        currentTileLayer = tileProviders.voyager;
+        currentTileLayer.addTo(map);
+
+        // 1. Origin Marker (Emerald Port Anchor)
         const originMarker = L.circleMarker([originLat, originLon], {
             radius: 8,
             fillColor: '#10b981',
             color: '#ffffff',
-            weight: 2,
+            weight: 2.5,
             opacity: 1,
-            fillOpacity: 0.9
+            fillOpacity: 0.95
         }).addTo(map);
-        originMarker.bindPopup("<strong>ORIGIN:</strong> {{ $shipment->origin->name }}<br>Departure: {{ $shipment->expected_departure->format('Y-m-d H:i') }}");
+        originMarker.bindPopup(`<strong>PELABUHAN ASAL (ORIGIN):</strong><br>{{ $shipment->origin->name }}, {{ $shipment->origin->country }}<br>Departure: {{ $shipment->expected_departure->format('Y-m-d H:i') }}`);
 
-        // Destination marker (Red)
+        // 2. Destination Marker (Rose Terminal Flag)
         const destMarker = L.circleMarker([destLat, destLon], {
             radius: 8,
             fillColor: '#ef4444',
             color: '#ffffff',
-            weight: 2,
+            weight: 2.5,
             opacity: 1,
-            fillOpacity: 0.9
+            fillOpacity: 0.95
         }).addTo(map);
-        destMarker.bindPopup("<strong>DESTINATION:</strong> {{ $shipment->destination->name }}<br>Arrival: {{ $shipment->expected_arrival->format('Y-m-d H:i') }}");
+        destMarker.bindPopup(`<strong>PELABUHAN TUJUAN (DESTINATION):</strong><br>{{ $shipment->destination->name }}, {{ $shipment->destination->country }}<br>ETA: {{ $shipment->expected_arrival->format('Y-m-d H:i') }}`);
 
-        // Waypoints from tracking events
+        // 3. Historical Waypoint Checkpoints
         @foreach($shipment->trackingEvents as $ev)
             @if($ev->latitude && $ev->longitude)
-                routeCoords.push([{{ $ev->latitude }}, {{ $ev->longitude }}]);
                 const wpMarker = L.circleMarker([{{ $ev->latitude }}, {{ $ev->longitude }}], {
                     radius: 6,
                     fillColor: '{{ $ev->is_exception_event ? "#dc2626" : "#0284c7" }}',
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.8
+                    fillOpacity: 0.9
                 }).addTo(map);
-                wpMarker.bindPopup("<strong>{{ $ev->event_type }}</strong><br>{{ $ev->location_name }}<br><small>{{ $ev->event_time->format('Y-m-d H:i') }}</small><br>{{ $ev->description }}");
+                wpMarker.bindPopup(`<strong>CHECKPOINT:</strong> {{ $ev->location_name }}<br><small class="text-slate-500">{{ $ev->event_time->format('Y-m-d H:i') }}</small><br>{{ $ev->description }}`);
             @endif
         @endforeach
 
-        routeCoords.push([destLat, destLon]);
+        // 4. Fixed Real-Time Anchor Beacon for Current Cargo Location ("Di mana barang sudah sampai")
+        const currentBeaconHtml = `
+            <div class="relative flex items-center justify-center pointer-events-auto" style="width: 36px; height: 36px; margin-left: -18px; margin-top: -18px;">
+                <span class="animate-ping absolute inline-flex h-9 w-9 rounded-full bg-amber-400 opacity-75"></span>
+                <span class="absolute inline-flex h-6 w-6 rounded-full bg-amber-500 opacity-50"></span>
+                <div class="relative inline-flex rounded-full h-7 w-7 bg-amber-600 border-2 border-white shadow-xl items-center justify-center text-white text-xs font-black">
+                    📍
+                </div>
+            </div>
+        `;
+        const currentBeaconMarker = L.marker([currentLat, currentLon], {
+            icon: L.divIcon({
+                html: currentBeaconHtml,
+                className: 'real-position-anchor-beacon',
+                iconSize: [36, 36],
+                iconAnchor: [18, 18],
+                popupAnchor: [0, -18]
+            }),
+            zIndexOffset: 700
+        }).addTo(map);
+        currentBeaconMarker.bindPopup(`
+            <div class="p-1 font-sans text-xs min-w-[210px]">
+                <div class="text-[10px] font-black uppercase tracking-wider text-amber-800 mb-0.5">📍 POSISI REAL-TIME SAAT INI</div>
+                <div class="text-sm font-extrabold text-slate-900">${currentLocationName}</div>
+                <div class="text-slate-600 text-[11px] mt-1 space-y-0.5 border-t border-slate-100 pt-1">
+                    <div>Status: <span class="font-bold text-amber-700">{{ $shipment->current_status }}</span></div>
+                    <div>Perjalanan Tuntas: <strong>${currentProgress}%</strong></div>
+                    <div>Koordinat: ${currentLat.toFixed(4)}°, ${currentLon.toFixed(4)}°</div>
+                    <div class="text-[10px] text-slate-400">Pembaruan: {{ $currentPos['last_updated'] }}</div>
+                </div>
+            </div>
+        `);
 
-        // Draw connecting maritime polyline
-        const polyline = L.polyline(routeCoords, {
+        // 5. Build Densely Interpolated Route for Butter-Smooth Shopee-Style Sailing Animation
+        densePoints = [];
+        for (let i = 0; i < cleanedWaypoints.length - 1; i++) {
+            const p1 = cleanedWaypoints[i];
+            const p2 = cleanedWaypoints[i + 1];
+
+            const dLat = (p2[0] - p1[0]) * 111;
+            const dLon = (p2[1] - p1[1]) * 111 * Math.cos((p1[0] + p2[0]) * Math.PI / 360);
+            const distKm = Math.sqrt(dLat * dLat + dLon * dLon);
+            const steps = Math.max(80, Math.min(300, Math.round(distKm * 0.08)));
+
+            for (let s = 0; s < steps; s++) {
+                const t = s / steps;
+                const curLat = p1[0] + (p2[0] - p1[0]) * t;
+                const curLon = p1[1] + (p2[1] - p1[1]) * t;
+                const bearing = calculateBearing(curLat, curLon, p2[0], p2[1]);
+
+                densePoints.push({
+                    lat: curLat,
+                    lng: curLon,
+                    bearing: bearing,
+                    segment: i
+                });
+            }
+        }
+        if (cleanedWaypoints.length > 0) {
+            const last = cleanedWaypoints[cleanedWaypoints.length - 1];
+            densePoints.push({
+                lat: last[0],
+                lng: last[1],
+                bearing: densePoints.length > 0 ? densePoints[densePoints.length - 1].bearing : 0,
+                segment: cleanedWaypoints.length - 1
+            });
+        }
+
+        // 6. Polylines: Planned route (dashed) and Traveled route (glowing solid gold)
+        plannedPolyline = L.polyline(cleanedWaypoints, {
             color: '#38251D',
-            weight: 3.5,
-            opacity: 0.85
+            weight: 3,
+            opacity: 0.45,
+            dashArray: '6, 8'
         }).addTo(map);
 
-        // Current Live Position of the cargo ("Di Mana Barang Itu Sudah Sampai")
-        const currentLat = {{ $currentPos['latitude'] }};
-        const currentLon = {{ $currentPos['longitude'] }};
-        const currentLocationName = {!! json_encode($currentPos['location_name']) !!};
-        const currentProgress = {{ $currentPos['progress_percent'] }};
-        const isArrived = {{ $currentPos['is_arrived'] ? 'true' : 'false' }};
+        traveledPolyline = L.polyline([], {
+            color: '#C49A55',
+            weight: 4,
+            opacity: 0.95
+        }).addTo(map);
 
-        // Create Custom Pulsing Golden Vessel Marker for Current Cargo Location
-        const vesselHtml = `
-            <div class="relative flex items-center justify-center cursor-pointer" style="width: 44px; height: 44px; margin-left: -22px; margin-top: -22px;">
-                <span class="animate-ping absolute inline-flex h-10 w-10 rounded-full bg-amber-400 opacity-75"></span>
-                <span class="absolute inline-flex h-7 w-7 rounded-full bg-amber-500 opacity-40"></span>
-                <div class="relative inline-flex rounded-full h-8 w-8 bg-[#38251D] border-2 border-[#C49A55] shadow-xl items-center justify-center text-white text-sm font-bold">
+        // 7. Custom Moving Vessel Marker (Shopee-Style Animated Cargo Ship with Water Ripples)
+        const movingVesselHtml = `
+            <div class="shopee-sailing-ship-container relative flex items-center justify-center cursor-pointer" style="width: 52px; height: 52px; margin-left: -26px; margin-top: -26px;">
+                <!-- Expanding water wake ripple effects -->
+                <div class="ship-wake-pulse absolute w-12 h-12 rounded-full bg-cyan-400/40 animate-ping"></div>
+                <div class="ship-wake-glow absolute w-9 h-9 rounded-full bg-amber-400/30 animate-pulse"></div>
+
+                <!-- Directional Container Ship Body (Rotates to heading) -->
+                <div class="vessel-rotating-body relative w-10 h-10 bg-gradient-to-br from-[#38251D] via-[#4E342E] to-[#292421] border-2 border-[#C49A55] rounded-full shadow-2xl flex items-center justify-center text-white text-base font-bold transition-transform duration-75" id="sailing-ship-icon">
                     🚢
                 </div>
+
+                <!-- Floating Shopee-style live badge -->
+                <div class="absolute -top-7 whitespace-nowrap bg-slate-900/95 text-[#E8D7B9] text-[9px] font-black px-2 py-0.5 rounded-full border border-[#C49A55]/50 shadow-lg flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="ship-badge-text">Berlayar 19.4 Knots</span>
+                </div>
             </div>
         `;
 
-        const vesselIcon = L.divIcon({
-            html: vesselHtml,
-            className: 'live-cargo-vessel-marker',
-            iconSize: [44, 44],
-            iconAnchor: [22, 22],
-            popupAnchor: [0, -22]
+        const movingVesselIcon = L.divIcon({
+            html: movingVesselHtml,
+            className: 'shopee-moving-vessel-marker',
+            iconSize: [52, 52],
+            iconAnchor: [26, 26],
+            popupAnchor: [0, -26]
         });
 
-        const vesselMarker = L.marker([currentLat, currentLon], { icon: vesselIcon, zIndexOffset: 1000 }).addTo(map);
+        const startPt = densePoints[0] || { lat: originLat, lng: originLon };
+        movingVesselMarker = L.marker([startPt.lat, startPt.lng], {
+            icon: movingVesselIcon,
+            zIndexOffset: 1200
+        }).addTo(map);
 
-        const vesselPopupContent = `
-            <div class="p-1 font-sans text-xs min-w-[220px]">
-                <div class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-1">
-                    <span>📍</span> POSISI KARGO SAAT INI (LIVE)
+        movingVesselMarker.bindPopup(`
+            <div class="p-1 font-sans text-xs min-w-[210px]">
+                <div class="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> KAPAL SEDANG BERLAYAR
                 </div>
-                <div class="text-sm font-extrabold text-slate-900 mb-1">${currentLocationName}</div>
-                <div class="space-y-1 text-slate-600 border-t border-slate-100 pt-1">
-                    <div><strong>Status:</strong> <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900">{{ $shipment->current_status }}</span></div>
-                    <div><strong>Vessel:</strong> {{ $shipment->vessel_name ?? $shipment->vessel_carrier ?? 'MSC Amsterdam' }}</div>
-                    <div><strong>Voyage:</strong> {{ $shipment->voyage_number ?? 'VOY-2026' }}</div>
-                    <div><strong>Progress:</strong> ${currentProgress}% of voyage completed</div>
-                    <div><strong>Coordinates:</strong> ${currentLat.toFixed(4)}°, ${currentLon.toFixed(4)}°</div>
-                    <div class="text-[10px] text-slate-500 mt-1">🕒 Last Reported: {{ $currentPos['last_updated'] }}</div>
+                <div class="text-sm font-extrabold text-slate-900 mt-0.5">${vesselName}</div>
+                <div class="text-[11px] text-slate-600 space-y-0.5 mt-1 border-t border-slate-100 pt-1">
+                    <div>Rute: <strong>{{ $shipment->origin->city }} &rarr; {{ $shipment->destination->city }}</strong></div>
+                    <div>Kecepatan: <strong>19.4 Knots (~36 km/h)</strong></div>
+                    <div>Status: <span class="px-1.5 py-0.2 bg-amber-100 text-amber-900 font-bold rounded text-[10px]">{{ $shipment->current_status }}</span></div>
                 </div>
             </div>
-        `;
-        vesselMarker.bindPopup(vesselPopupContent);
-        // Automatically open the vessel popup so user sees immediately where the cargo is!
-        vesselMarker.openPopup();
+        `);
 
-        // Fit map bounds to show route and current vessel location
-        const allBounds = L.latLngBounds(routeCoords);
+        // 8. Continuous Animation Loop (Shopee Smooth Movement)
+        const telemetryCoords = document.getElementById('telemetry-coords');
+        const telemetrySpeed = document.getElementById('telemetry-speed');
+        const telemetryLeg = document.getElementById('telemetry-leg');
+        const shipBadgeText = document.getElementById('ship-badge-text');
+
+        function animateSailingFrame() {
+            if (!isSailingPlaying) return;
+
+            curStepIndex += sailingSpeed;
+            if (curStepIndex >= densePoints.length) {
+                curStepIndex = 0; // Smooth loop from origin
+            }
+
+            const cur = densePoints[curStepIndex];
+            if (cur) {
+                movingVesselMarker.setLatLng([cur.lat, cur.lng]);
+
+                // Rotate ship icon smoothly to heading angle
+                const shipIconElem = document.getElementById('sailing-ship-icon');
+                if (shipIconElem) {
+                    shipIconElem.style.transform = `rotate(${Math.round(cur.bearing)}deg)`;
+                }
+
+                // Update dynamic trail
+                const trailCoords = densePoints.slice(0, curStepIndex + 1).map(p => [p.lat, p.lng]);
+                traveledPolyline.setLatLngs(trailCoords);
+
+                // Update telemetry overlay
+                if (telemetryCoords) {
+                    telemetryCoords.innerText = `Lat: ${cur.lat.toFixed(4)}°, Lon: ${cur.lng.toFixed(4)}°`;
+                }
+                const progressPct = Math.round((curStepIndex / (densePoints.length - 1)) * 100);
+                if (shipBadgeText) {
+                    shipBadgeText.innerText = `Berlayar (${progressPct}%)`;
+                }
+            }
+        }
+
+        // Run animation timer (approx 30fps for smooth gliding)
+        animationInterval = setInterval(animateSailingFrame, 35);
+
+        // 9. Interactive Control Buttons
+        const playPauseBtn = document.getElementById('btn-play-pause');
+        const playIcon = document.getElementById('play-icon');
+        const playText = document.getElementById('play-text');
+        if (playPauseBtn) {
+            playPauseBtn.addEventListener('click', function () {
+                isSailingPlaying = !isSailingPlaying;
+                if (isSailingPlaying) {
+                    playIcon.innerText = '⏸️';
+                    playText.innerText = 'Jeda';
+                    animationInterval = setInterval(animateSailingFrame, 35);
+                } else {
+                    playIcon.innerText = '▶️';
+                    playText.innerText = 'Lanjut';
+                    clearInterval(animationInterval);
+                }
+            });
+        }
+
+        const restartBtn = document.getElementById('btn-restart');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', function () {
+                curStepIndex = 0;
+                traveledPolyline.setLatLngs([]);
+                if (!isSailingPlaying) {
+                    isSailingPlaying = true;
+                    if (playIcon) playIcon.innerText = '⏸️';
+                    if (playText) playText.innerText = 'Jeda';
+                    animationInterval = setInterval(animateSailingFrame, 35);
+                }
+                map.panTo([originLat, originLon]);
+            });
+        }
+
+        const jumpNowBtn = document.getElementById('btn-jump-now');
+        if (jumpNowBtn) {
+            jumpNowBtn.addEventListener('click', function () {
+                // Find point closest to current real-world coordinates
+                let closestIndex = 0;
+                let minDist = 999999;
+                for (let i = 0; i < densePoints.length; i++) {
+                    const d = Math.abs(densePoints[i].lat - currentLat) + Math.abs(densePoints[i].lng - currentLon);
+                    if (d < minDist) {
+                        minDist = d;
+                        closestIndex = i;
+                    }
+                }
+                curStepIndex = closestIndex;
+                map.flyTo([currentLat, currentLon], 6, { animate: true, duration: 1.2 });
+                currentBeaconMarker.openPopup();
+            });
+        }
+
+        // Fit bounds initially
+        const allBounds = L.latLngBounds(cleanedWaypoints);
         allBounds.extend([currentLat, currentLon]);
-        map.fitBounds(allBounds, { padding: [50, 50] });
+        map.fitBounds(allBounds, { padding: [55, 55] });
     });
 </script>
 @endsection

@@ -120,8 +120,59 @@
                 </div>
                 @endif
 
-                <!-- Interactive Leaflet Map Canvas -->
-                <div id="public-tracking-map" class="h-96 w-full z-10"></div>
+                <!-- Shopee-Style Live Vessel Sailing Controls Bar -->
+                <div class="px-5 py-2.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2 text-xs border-b border-slate-800">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-[#C49A55] flex items-center gap-1">
+                            <span>⚡</span> SIMULASI PELAYARAN KAPAL
+                        </span>
+                        <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+                            <button id="public-btn-play-pause" type="button" class="px-2.5 py-1 rounded bg-[#C49A55] text-slate-900 font-extrabold text-[11px] hover:bg-[#b38944] transition flex items-center gap-1 shadow-xs">
+                                <span id="public-play-icon">⏸️</span> <span id="public-play-text">Jeda</span>
+                            </button>
+                            <button id="public-btn-restart" type="button" class="px-2 py-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 text-[11px] font-bold transition flex items-center gap-1">
+                                <span>🔄</span> Ulangi
+                            </button>
+                            <button id="public-btn-jump-now" type="button" class="px-2 py-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 text-[11px] font-bold transition flex items-center gap-1">
+                                <span>🎯</span> Posisi Terkini
+                            </button>
+                        </div>
+
+                        <!-- Speed selector -->
+                        <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 border border-slate-700 text-[10px]">
+                            <span class="text-slate-400 px-1 font-bold">Speed:</span>
+                            <button type="button" onclick="setPublicSailingSpeed(1)" class="pub-speed-btn px-1.5 py-0.5 rounded font-bold transition bg-[#C49A55] text-slate-900" id="pub-speed-1">1x</button>
+                            <button type="button" onclick="setPublicSailingSpeed(2)" class="pub-speed-btn px-1.5 py-0.5 rounded font-bold transition text-slate-300 hover:text-white" id="pub-speed-2">2x</button>
+                            <button type="button" onclick="setPublicSailingSpeed(4)" class="pub-speed-btn px-1.5 py-0.5 rounded font-bold transition text-slate-300 hover:text-white" id="pub-speed-4">4x</button>
+                        </div>
+                    </div>
+
+                    <!-- World Map Theme Selector -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase hidden sm:inline">Peta Dunia:</span>
+                        <select id="public-map-style" onchange="changePublicMapTheme(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1 text-[11px] font-semibold focus:outline-none focus:ring-1 focus:ring-[#C49A55] cursor-pointer">
+                            <option value="voyager" selected>🗺️ Peta Dunia Voyager (Default)</option>
+                            <option value="dark">🌙 Dark Maritime Chart</option>
+                            <option value="osm">🧭 OpenStreetMap Classic</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Interactive Leaflet Map Canvas with Telemetry Overlay -->
+                <div class="relative w-full">
+                    <!-- Live Telemetry HUD Bar on Top of Map -->
+                    <div class="absolute top-3 left-14 z-20 bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-[#C49A55]/40 shadow-lg text-[11px] flex items-center gap-3 pointer-events-none">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span class="font-extrabold text-[#E8D7B9]">KAPAL BERLAYAR (LIVE):</span>
+                            <span class="font-mono text-white font-bold" id="pub-telemetry-coords">Lat: {{ number_format($currentPos['latitude'], 4) }}°, Lon: {{ number_format($currentPos['longitude'], 4) }}°</span>
+                        </div>
+                        <span class="text-slate-500">|</span>
+                        <span class="text-[#C49A55] font-bold">19.4 Knots</span>
+                    </div>
+
+                    <div id="public-tracking-map" class="h-[500px] w-full z-10"></div>
+                </div>
 
                 <div class="p-3 bg-slate-50 text-[11px] text-slate-600 border-t border-slate-100 flex flex-wrap items-center justify-between px-5">
                     <div class="flex items-center gap-3">
@@ -233,6 +284,50 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
+    let pubMap;
+    let pubCurrentTileLayer;
+    let pubTileProviders = {};
+    let pubAnimationInterval = null;
+    let pubDensePoints = [];
+    let pubCurStepIndex = 0;
+    let pubSailingSpeed = 1;
+    let pubIsSailingPlaying = true;
+    let pubMovingVesselMarker = null;
+    let pubTraveledPolyline = null;
+    let pubPlannedPolyline = null;
+
+    function setPublicSailingSpeed(multiplier) {
+        pubSailingSpeed = multiplier;
+        document.querySelectorAll('.pub-speed-btn').forEach(b => {
+            b.classList.remove('bg-[#C49A55]', 'text-slate-900');
+            b.classList.add('text-slate-300');
+        });
+        const activeBtn = document.getElementById('pub-speed-' + multiplier);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-[#C49A55]', 'text-slate-900');
+            activeBtn.classList.remove('text-slate-300');
+        }
+    }
+
+    function changePublicMapTheme(theme) {
+        if (!pubMap || !pubTileProviders[theme]) return;
+        if (pubCurrentTileLayer) {
+            pubMap.removeLayer(pubCurrentTileLayer);
+        }
+        pubCurrentTileLayer = pubTileProviders[theme];
+        pubCurrentTileLayer.addTo(pubMap);
+    }
+
+    function pubCalculateBearing(lat1, lon1, lat2, lon2) {
+        const toRad = Math.PI / 180;
+        const toDeg = 180 / Math.PI;
+        const dLon = (lon2 - lon1) * toRad;
+        const y = Math.sin(dLon) * Math.cos(lat2 * toRad);
+        const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) -
+                  Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLon);
+        return (Math.atan2(y, x) * toDeg + 360) % 360;
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const originLat = {{ $shipment->origin->latitude }};
         const originLon = {{ $shipment->origin->longitude }};
@@ -243,101 +338,283 @@
         const currentLon = {{ $currentPos['longitude'] }};
         const currentLocationName = {!! json_encode($currentPos['location_name']) !!};
         const currentProgress = {{ $currentPos['progress_percent'] }};
+        const vesselName = {!! json_encode($shipment->vessel_name ?? $shipment->vessel_carrier ?? 'MV Cargo Liner') !!};
 
-        const routeCoords = [
+        const rawWaypoints = [
             [originLat, originLon]
         ];
 
-        const map = L.map('public-tracking-map', {
+        @foreach($shipment->trackingEvents as $ev)
+            @if($ev->latitude && $ev->longitude)
+                rawWaypoints.push([{{ $ev->latitude }}, {{ $ev->longitude }}]);
+            @endif
+        @endforeach
+
+        rawWaypoints.push([currentLat, currentLon]);
+        rawWaypoints.push([destLat, destLon]);
+
+        const cleanedWaypoints = [];
+        for (let i = 0; i < rawWaypoints.length; i++) {
+            if (i === 0 || rawWaypoints[i][0] !== rawWaypoints[i-1][0] || rawWaypoints[i][1] !== rawWaypoints[i-1][1]) {
+                cleanedWaypoints.push(rawWaypoints[i]);
+            }
+        }
+
+        pubMap = L.map('public-tracking-map', {
             center: [currentLat, currentLon],
-            zoom: 4
+            zoom: 4,
+            minZoom: 2,
+            maxZoom: 18,
+            worldCopyJump: true
         });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        pubTileProviders = {
+            voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }),
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }),
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            })
+        };
+
+        pubCurrentTileLayer = pubTileProviders.voyager;
+        pubCurrentTileLayer.addTo(pubMap);
 
         // Origin marker
         L.circleMarker([originLat, originLon], {
             radius: 8,
             fillColor: '#10b981',
             color: '#ffffff',
-            weight: 2,
+            weight: 2.5,
             opacity: 1,
-            fillOpacity: 0.9
-        }).addTo(map).bindPopup("<strong>ASAL:</strong> {{ $shipment->origin->name }}");
+            fillOpacity: 0.95
+        }).addTo(pubMap).bindPopup("<strong>PELABUHAN ASAL:</strong> {{ $shipment->origin->name }}, {{ $shipment->origin->country }}");
 
         // Destination marker
         L.circleMarker([destLat, destLon], {
             radius: 8,
             fillColor: '#ef4444',
             color: '#ffffff',
-            weight: 2,
+            weight: 2.5,
             opacity: 1,
-            fillOpacity: 0.9
-        }).addTo(map).bindPopup("<strong>TUJUAN:</strong> {{ $shipment->destination->name }}");
+            fillOpacity: 0.95
+        }).addTo(pubMap).bindPopup("<strong>PELABUHAN TUJUAN:</strong> {{ $shipment->destination->name }}, {{ $shipment->destination->country }}");
 
-        // Waypoints
+        // Intermediate checkpoints
         @foreach($shipment->trackingEvents as $ev)
             @if($ev->latitude && $ev->longitude)
-                routeCoords.push([{{ $ev->latitude }}, {{ $ev->longitude }}]);
                 L.circleMarker([{{ $ev->latitude }}, {{ $ev->longitude }}], {
                     radius: 5,
                     fillColor: '#0284c7',
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.8
-                }).addTo(map).bindPopup("<strong>{{ $ev->location_name }}</strong><br><small>{{ $ev->event_time->format('Y-m-d H:i') }}</small>");
+                    fillOpacity: 0.85
+                }).addTo(pubMap).bindPopup("<strong>CHECKPOINT:</strong> {{ $ev->location_name }}<br><small>{{ $ev->event_time->format('Y-m-d H:i') }}</small>");
             @endif
         @endforeach
 
-        routeCoords.push([destLat, destLon]);
+        // Current Anchor Beacon
+        const beaconHtml = `
+            <div class="relative flex items-center justify-center pointer-events-auto" style="width: 36px; height: 36px; margin-left: -18px; margin-top: -18px;">
+                <span class="animate-ping absolute inline-flex h-9 w-9 rounded-full bg-amber-400 opacity-75"></span>
+                <div class="relative inline-flex rounded-full h-7 w-7 bg-amber-600 border-2 border-white shadow-xl items-center justify-center text-white text-xs font-black">
+                    📍
+                </div>
+            </div>
+        `;
+        const pubBeacon = L.marker([currentLat, currentLon], {
+            icon: L.divIcon({
+                html: beaconHtml,
+                className: 'pub-beacon-marker',
+                iconSize: [36, 36],
+                iconAnchor: [18, 18],
+                popupAnchor: [0, -18]
+            }),
+            zIndexOffset: 700
+        }).addTo(pubMap);
+        pubBeacon.bindPopup(`
+            <div class="p-1 font-sans text-xs min-w-[200px]">
+                <div class="text-[10px] font-black uppercase tracking-wider text-amber-800">📍 POSISI REAL-TIME SAAT INI</div>
+                <div class="text-sm font-extrabold text-slate-900">${currentLocationName}</div>
+                <div class="text-slate-600 text-[11px] mt-1 space-y-0.5">
+                    <div>Perjalanan Tuntas: <strong>${currentProgress}%</strong></div>
+                    <div>Koordinat: ${currentLat.toFixed(4)}°, ${currentLon.toFixed(4)}°</div>
+                    <div>Status: <strong>{{ $shipment->current_status }}</strong></div>
+                </div>
+            </div>
+        `);
 
-        // Draw connecting polyline
-        const polyline = L.polyline(routeCoords, {
+        // Build Dense Interpolated Steps for Smooth Shopee-Style Gliding
+        pubDensePoints = [];
+        for (let i = 0; i < cleanedWaypoints.length - 1; i++) {
+            const p1 = cleanedWaypoints[i];
+            const p2 = cleanedWaypoints[i + 1];
+
+            const dLat = (p2[0] - p1[0]) * 111;
+            const dLon = (p2[1] - p1[1]) * 111 * Math.cos((p1[0] + p2[0]) * Math.PI / 360);
+            const distKm = Math.sqrt(dLat * dLat + dLon * dLon);
+            const steps = Math.max(80, Math.min(300, Math.round(distKm * 0.08)));
+
+            for (let s = 0; s < steps; s++) {
+                const t = s / steps;
+                const curLat = p1[0] + (p2[0] - p1[0]) * t;
+                const curLon = p1[1] + (p2[1] - p1[1]) * t;
+                const bearing = pubCalculateBearing(curLat, curLon, p2[0], p2[1]);
+
+                pubDensePoints.push({
+                    lat: curLat,
+                    lng: curLon,
+                    bearing: bearing
+                });
+            }
+        }
+        if (cleanedWaypoints.length > 0) {
+            const last = cleanedWaypoints[cleanedWaypoints.length - 1];
+            pubDensePoints.push({
+                lat: last[0],
+                lng: last[1],
+                bearing: pubDensePoints.length > 0 ? pubDensePoints[pubDensePoints.length - 1].bearing : 0
+            });
+        }
+
+        pubPlannedPolyline = L.polyline(cleanedWaypoints, {
             color: '#38251D',
-            weight: 3.5,
-            opacity: 0.8
-        }).addTo(map);
+            weight: 3,
+            opacity: 0.45,
+            dashArray: '6, 8'
+        }).addTo(pubMap);
 
-        // Pulsing Vessel Marker ("Di Mana Barang Itu Sudah Sampai")
-        const vesselHtml = `
-            <div class="relative flex items-center justify-center cursor-pointer" style="width: 44px; height: 44px; margin-left: -22px; margin-top: -22px;">
-                <span class="animate-ping absolute inline-flex h-10 w-10 rounded-full bg-amber-400 opacity-75"></span>
-                <span class="absolute inline-flex h-7 w-7 rounded-full bg-amber-500 opacity-40"></span>
-                <div class="relative inline-flex rounded-full h-8 w-8 bg-[#38251D] border-2 border-[#C49A55] shadow-xl items-center justify-center text-white text-sm font-bold">
+        pubTraveledPolyline = L.polyline([], {
+            color: '#C49A55',
+            weight: 4,
+            opacity: 0.95
+        }).addTo(pubMap);
+
+        // Moving Ship (Shopee Style)
+        const pubMovingVesselHtml = `
+            <div class="relative flex items-center justify-center cursor-pointer" style="width: 52px; height: 52px; margin-left: -26px; margin-top: -26px;">
+                <div class="absolute w-12 h-12 rounded-full bg-cyan-400/40 animate-ping"></div>
+                <div class="relative w-10 h-10 bg-gradient-to-br from-[#38251D] via-[#4E342E] to-[#292421] border-2 border-[#C49A55] rounded-full shadow-2xl flex items-center justify-center text-white text-base font-bold transition-transform duration-75" id="pub-sailing-ship-icon">
                     🚢
+                </div>
+                <div class="absolute -top-7 whitespace-nowrap bg-slate-900/95 text-[#E8D7B9] text-[9px] font-black px-2 py-0.5 rounded-full border border-[#C49A55]/50 shadow-lg flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="pub-ship-badge-text">Berlayar...</span>
                 </div>
             </div>
         `;
 
-        const vesselIcon = L.divIcon({
-            html: vesselHtml,
-            className: 'live-cargo-vessel-marker',
-            iconSize: [44, 44],
-            iconAnchor: [22, 22],
-            popupAnchor: [0, -22]
-        });
+        const pubStartPt = pubDensePoints[0] || { lat: originLat, lng: originLon };
+        pubMovingVesselMarker = L.marker([pubStartPt.lat, pubStartPt.lng], {
+            icon: L.divIcon({
+                html: pubMovingVesselHtml,
+                className: 'pub-sailing-marker',
+                iconSize: [52, 52],
+                iconAnchor: [26, 26],
+                popupAnchor: [0, -26]
+            }),
+            zIndexOffset: 1200
+        }).addTo(pubMap);
 
-        const vesselMarker = L.marker([currentLat, currentLon], { icon: vesselIcon, zIndexOffset: 1000 }).addTo(map);
+        const pubTelemetryCoords = document.getElementById('pub-telemetry-coords');
+        const pubShipBadgeText = document.getElementById('pub-ship-badge-text');
 
-        vesselMarker.bindPopup(`
-            <div class="p-1 font-sans text-xs min-w-[200px]">
-                <div class="text-[10px] font-bold text-amber-800 uppercase tracking-wide">📍 POSISI BARANG SAAT INI</div>
-                <div class="text-sm font-black text-slate-900 mb-1">${currentLocationName}</div>
-                <div class="text-slate-600 text-[11px] space-y-0.5">
-                    <div>Perjalanan Tuntas: <strong>${currentProgress}%</strong></div>
-                    <div>Koordinat: ${currentLat.toFixed(4)}°, ${currentLon.toFixed(4)}°</div>
-                    <div>Status: {{ $shipment->current_status }}</div>
-                </div>
-            </div>
-        `).openPopup();
+        function animatePublicSailingFrame() {
+            if (!pubIsSailingPlaying) return;
 
-        const allBounds = L.latLngBounds(routeCoords);
+            pubCurStepIndex += pubSailingSpeed;
+            if (pubCurStepIndex >= pubDensePoints.length) {
+                pubCurStepIndex = 0;
+            }
+
+            const cur = pubDensePoints[pubCurStepIndex];
+            if (cur) {
+                pubMovingVesselMarker.setLatLng([cur.lat, cur.lng]);
+
+                const iconElem = document.getElementById('pub-sailing-ship-icon');
+                if (iconElem) {
+                    iconElem.style.transform = `rotate(${Math.round(cur.bearing)}deg)`;
+                }
+
+                const trail = pubDensePoints.slice(0, pubCurStepIndex + 1).map(p => [p.lat, p.lng]);
+                pubTraveledPolyline.setLatLngs(trail);
+
+                if (pubTelemetryCoords) {
+                    pubTelemetryCoords.innerText = `Lat: ${cur.lat.toFixed(4)}°, Lon: ${cur.lng.toFixed(4)}°`;
+                }
+                const pct = Math.round((pubCurStepIndex / (pubDensePoints.length - 1)) * 100);
+                if (pubShipBadgeText) {
+                    pubShipBadgeText.innerText = `Berlayar (${pct}%)`;
+                }
+            }
+        }
+
+        pubAnimationInterval = setInterval(animatePublicSailingFrame, 35);
+
+        // Control handlers
+        const playPauseBtn = document.getElementById('public-btn-play-pause');
+        const playIcon = document.getElementById('public-play-icon');
+        const playText = document.getElementById('public-play-text');
+        if (playPauseBtn) {
+            playPauseBtn.addEventListener('click', function () {
+                pubIsSailingPlaying = !pubIsSailingPlaying;
+                if (pubIsSailingPlaying) {
+                    playIcon.innerText = '⏸️';
+                    playText.innerText = 'Jeda';
+                    pubAnimationInterval = setInterval(animatePublicSailingFrame, 35);
+                } else {
+                    playIcon.innerText = '▶️';
+                    playText.innerText = 'Lanjut';
+                    clearInterval(pubAnimationInterval);
+                }
+            });
+        }
+
+        const restartBtn = document.getElementById('public-btn-restart');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', function () {
+                pubCurStepIndex = 0;
+                pubTraveledPolyline.setLatLngs([]);
+                if (!pubIsSailingPlaying) {
+                    pubIsSailingPlaying = true;
+                    if (playIcon) playIcon.innerText = '⏸️';
+                    if (playText) playText.innerText = 'Jeda';
+                    pubAnimationInterval = setInterval(animatePublicSailingFrame, 35);
+                }
+                pubMap.panTo([originLat, originLon]);
+            });
+        }
+
+        const jumpNowBtn = document.getElementById('public-btn-jump-now');
+        if (jumpNowBtn) {
+            jumpNowBtn.addEventListener('click', function () {
+                let closestIndex = 0;
+                let minDist = 999999;
+                for (let i = 0; i < pubDensePoints.length; i++) {
+                    const d = Math.abs(pubDensePoints[i].lat - currentLat) + Math.abs(pubDensePoints[i].lng - currentLon);
+                    if (d < minDist) {
+                        minDist = d;
+                        closestIndex = i;
+                    }
+                }
+                pubCurStepIndex = closestIndex;
+                pubMap.flyTo([currentLat, currentLon], 6, { animate: true, duration: 1.2 });
+                pubBeacon.openPopup();
+            });
+        }
+
+        const allBounds = L.latLngBounds(cleanedWaypoints);
         allBounds.extend([currentLat, currentLon]);
-        map.fitBounds(allBounds, { padding: [50, 50] });
+        pubMap.fitBounds(allBounds, { padding: [55, 55] });
     });
 </script>
 @endsection

@@ -96,36 +96,52 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <!-- Leaflet Map Container (8 cols) -->
         <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-            <div class="p-3 bg-slate-900 text-white flex items-center justify-between text-xs px-4">
-                <div class="flex items-center gap-3">
-                    <span class="flex items-center gap-1.5 font-bold text-[#E8D7B9]">
+            <!-- Shopee-Style Fleet Sailing Controls & World Map Theme -->
+            <div class="p-3 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 text-xs px-4 border-b border-slate-800">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="flex items-center gap-1.5 font-bold text-[#E8D7B9] text-xs">
                         <span>🌍</span> GLOBAL MARITIME AIS TRACKING
                     </span>
-                    <span class="text-slate-400">|</span>
-                    <span class="text-slate-300">Menampilkan {{ count($mapShipments) }} Posisi Kapal Real-Time</span>
+                    <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+                        <button id="fleet-btn-play-pause" type="button" class="px-2.5 py-1 rounded bg-[#C49A55] text-slate-900 font-extrabold text-[11px] hover:bg-[#b38944] transition flex items-center gap-1">
+                            <span id="fleet-play-icon">⏸️</span> <span id="fleet-play-text">Jeda Semua Kapal</span>
+                        </button>
+                        <button id="fleet-btn-restart" type="button" class="px-2 py-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 text-[11px] font-bold transition flex items-center gap-1">
+                            <span>🔄</span> Ulangi Rute
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 border border-slate-700 text-[10px]">
+                        <span class="text-slate-400 px-1 font-bold">Speed:</span>
+                        <button type="button" onclick="setFleetSpeed(1)" class="fleet-speed-btn px-1.5 py-0.5 rounded font-bold transition bg-[#C49A55] text-slate-900" id="fleet-spd-1">1x</button>
+                        <button type="button" onclick="setFleetSpeed(2)" class="fleet-speed-btn px-1.5 py-0.5 rounded font-bold transition text-slate-300 hover:text-white" id="fleet-spd-2">2x</button>
+                        <button type="button" onclick="setFleetSpeed(4)" class="fleet-speed-btn px-1.5 py-0.5 rounded font-bold transition text-slate-300 hover:text-white" id="fleet-spd-4">4x</button>
+                    </div>
                 </div>
-                <div class="flex items-center gap-3 text-[11px]">
-                    <span class="inline-flex items-center gap-1 text-emerald-400">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Origin
-                    </span>
-                    <span class="inline-flex items-center gap-1 text-amber-400">
-                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Posisi Kargo (Di Mana Barang Sampai)
-                    </span>
-                    <span class="inline-flex items-center gap-1 text-rose-400">
-                        <span class="w-2 h-2 rounded-full bg-rose-400"></span> Destination
-                    </span>
+
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase hidden sm:inline">Peta Dunia:</span>
+                        <select id="fleet-world-theme" onchange="changeFleetMapTheme(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1 text-[11px] font-semibold focus:outline-none focus:ring-1 focus:ring-[#C49A55] cursor-pointer">
+                            <option value="voyager" selected>🗺️ Peta Dunia Voyager (Default)</option>
+                            <option value="dark">🌙 Dark Maritime Chart</option>
+                            <option value="osm">🧭 OpenStreetMap Classic</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <!-- The Leaflet Map Canvas -->
-            <div id="fleet-map" class="h-[600px] w-full z-10"></div>
+            <!-- The Leaflet Map Canvas with World View -->
+            <div id="fleet-map" class="h-[620px] w-full z-10 relative"></div>
 
             <div class="p-2.5 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between px-4">
-                <div>
-                    Peta interaktif menggunakan OpenStreetMap &bull; Klik ikon kapal untuk detail kargo, voyage, cuaca, dan ETA
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center gap-1 text-emerald-600"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Pelabuhan Asal</span>
+                    <span class="inline-flex items-center gap-1 text-amber-700"><span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span> Posisi Kargo (Di Mana Barang Sampai)</span>
+                    <span class="inline-flex items-center gap-1 text-rose-600"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Pelabuhan Tujuan</span>
                 </div>
                 <div class="font-mono text-[10px]">
-                    Lat/Lng WGS84 Maritime Coordinates
+                    Nautical AIS Engine &bull; WGS84 World Coordinates
                 </div>
             </div>
         </div>
@@ -217,121 +233,166 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
-    // Shipments data from backend
     const shipmentsData = {!! json_encode($mapShipments) !!};
     let map;
-    const markers = {};
-    const routePolylines = {};
+    let currentTileLayer;
+    let tileProviders = {};
+    const staticMarkers = {};
+    const activeVessels = [];
+    let fleetAnimationInterval = null;
+    let isFleetPlaying = true;
+    let fleetSpeed = 1;
+
+    function setFleetSpeed(multiplier) {
+        fleetSpeed = multiplier;
+        document.querySelectorAll('.fleet-speed-btn').forEach(b => {
+            b.classList.remove('bg-[#C49A55]', 'text-slate-900');
+            b.classList.add('text-slate-300');
+        });
+        const activeBtn = document.getElementById('fleet-spd-' + multiplier);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-[#C49A55]', 'text-slate-900');
+            activeBtn.classList.remove('text-slate-300');
+        }
+    }
+
+    function changeFleetMapTheme(theme) {
+        if (!map || !tileProviders[theme]) return;
+        if (currentTileLayer) {
+            map.removeLayer(currentTileLayer);
+        }
+        currentTileLayer = tileProviders[theme];
+        currentTileLayer.addTo(map);
+    }
+
+    function fleetCalculateBearing(lat1, lon1, lat2, lon2) {
+        const toRad = Math.PI / 180;
+        const toDeg = 180 / Math.PI;
+        const dLon = (lon2 - lon1) * toRad;
+        const y = Math.sin(dLon) * Math.cos(lat2 * toRad);
+        const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) -
+                  Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLon);
+        return (Math.atan2(y, x) * toDeg + 360) % 360;
+    }
 
     document.addEventListener('DOMContentLoaded', function () {
-        // Initialize Leaflet Map centered on global maritime lanes (Equatorial / Indian Ocean view)
+        // Initialize World Map Leaflet Instance
         map = L.map('fleet-map', {
-            center: [10.0, 50.0],
+            center: [15.0, 50.0],
             zoom: 3,
             minZoom: 2,
-            maxZoom: 17
+            maxZoom: 18,
+            worldCopyJump: true
         });
 
-        // OpenStreetMap Standard Tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        // World Map Basemap Tile Providers
+        tileProviders = {
+            voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }),
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }),
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            })
+        };
+
+        currentTileLayer = tileProviders.voyager;
+        currentTileLayer.addTo(map);
 
         const bounds = L.latLngBounds();
 
-        // Loop and render each active cargo shipment
-        shipmentsData.forEach(s => {
+        // Loop through all active shipments and setup sailing animations
+        shipmentsData.forEach((s, idx) => {
             const pos = s.current_position;
             const origin = s.origin;
             const dest = s.destination;
 
-            // 1. Draw Origin Port (Emerald Circle Marker)
+            // 1. Origin Marker
             if (origin.lat && origin.lng) {
-                const originMarker = L.circleMarker([origin.lat, origin.lng], {
+                L.circleMarker([origin.lat, origin.lng], {
                     radius: 6,
                     fillColor: '#10b981',
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.9
-                }).addTo(map);
-                originMarker.bindPopup(`<strong>PELABUHAN ASAL (ORIGIN):</strong><br>${origin.name}, ${origin.country}<br><small>Cargo: ${s.number}</small>`);
+                    fillOpacity: 0.95
+                }).addTo(map).bindPopup(`<strong>PELABUHAN ASAL:</strong><br>${origin.name}, ${origin.country}<br><small>Cargo: ${s.number}</small>`);
                 bounds.extend([origin.lat, origin.lng]);
             }
 
-            // 2. Draw Destination Port (Rose Circle Marker)
+            // 2. Destination Marker
             if (dest.lat && dest.lng) {
-                const destMarker = L.circleMarker([dest.lat, dest.lng], {
+                L.circleMarker([dest.lat, dest.lng], {
                     radius: 6,
                     fillColor: '#ef4444',
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.9
-                }).addTo(map);
-                destMarker.bindPopup(`<strong>PELABUHAN TUJUAN (DESTINATION):</strong><br>${dest.name}, ${dest.country}<br><small>Cargo: ${s.number}</small>`);
+                    fillOpacity: 0.95
+                }).addTo(map).bindPopup(`<strong>PELABUHAN TUJUAN:</strong><br>${dest.name}, ${dest.country}<br><small>Cargo: ${s.number}</small>`);
                 bounds.extend([dest.lat, dest.lng]);
             }
 
-            // 3. Draw Maritime Route Polyline
-            const routePoints = [];
-            if (origin.lat && origin.lng) routePoints.push([origin.lat, origin.lng]);
+            // 3. Assemble cleaned route points
+            const rawPoints = [];
+            if (origin.lat && origin.lng) rawPoints.push([origin.lat, origin.lng]);
             if (s.waypoints && s.waypoints.length > 0) {
-                s.waypoints.forEach(wp => {
-                    routePoints.push([wp.lat, wp.lng]);
-                });
+                s.waypoints.forEach(wp => rawPoints.push([wp.lat, wp.lng]));
             }
-            if (pos.latitude && pos.longitude) {
-                routePoints.push([pos.latitude, pos.longitude]);
-            }
-            if (dest.lat && dest.lng) routePoints.push([dest.lat, dest.lng]);
+            if (pos.latitude && pos.longitude) rawPoints.push([pos.latitude, pos.longitude]);
+            if (dest.lat && dest.lng) rawPoints.push([dest.lat, dest.lng]);
 
-            if (routePoints.length >= 2) {
-                const poly = L.polyline(routePoints, {
+            const cleanedRoute = [];
+            for (let i = 0; i < rawPoints.length; i++) {
+                if (i === 0 || rawPoints[i][0] !== rawPoints[i-1][0] || rawPoints[i][1] !== rawPoints[i-1][1]) {
+                    cleanedRoute.push(rawPoints[i]);
+                }
+            }
+
+            // Draw planned polyline
+            if (cleanedRoute.length >= 2) {
+                L.polyline(cleanedRoute, {
                     color: s.commodity === 'COCOA' ? '#795548' : '#38251D',
                     weight: 2.5,
-                    opacity: 0.65,
+                    opacity: 0.45,
                     dashArray: '5, 8'
                 }).addTo(map);
-                routePolylines[s.id] = poly;
             }
 
-            // 4. Draw Current Vessel Location Beacon ("Di Mana Barang Itu Sudah Sampai")
+            // 4. Fixed Real-World Position Beacon ("Di mana barang sudah sampai")
             if (pos.latitude && pos.longitude) {
-                const isCoffee = s.commodity === 'COFFEE';
-                const vesselEmoji = isCoffee ? '☕' : '🍫';
-                const pulseBg = isCoffee ? 'bg-amber-400' : 'bg-orange-500';
-                const iconBg = isCoffee ? 'bg-[#38251D]' : 'bg-[#795548]';
-                const borderColor = isCoffee ? 'border-[#C49A55]' : 'border-amber-300';
-
-                const vesselIconHtml = `
-                    <div class="relative flex items-center justify-center cursor-pointer" style="width: 40px; height: 40px; margin-left: -20px; margin-top: -20px;">
-                        <span class="animate-ping absolute inline-flex h-9 w-9 rounded-full ${pulseBg} opacity-75"></span>
-                        <div class="relative inline-flex rounded-full h-8 w-8 ${iconBg} border-2 ${borderColor} shadow-xl items-center justify-center text-white text-xs font-bold">
-                            ${vesselEmoji}
+                const beaconHtml = `
+                    <div class="relative flex items-center justify-center pointer-events-auto" style="width: 28px; height: 28px; margin-left: -14px; margin-top: -14px;">
+                        <span class="animate-ping absolute inline-flex h-7 w-7 rounded-full bg-amber-400 opacity-75"></span>
+                        <div class="relative inline-flex rounded-full h-5 w-5 bg-amber-600 border border-white shadow-md items-center justify-center text-white text-[9px] font-black">
+                            📍
                         </div>
                     </div>
                 `;
-
-                const vesselIcon = L.divIcon({
-                    html: vesselIconHtml,
-                    className: 'fleet-vessel-marker',
-                    iconSize: [40, 40],
-                    iconAnchor: [20, 20],
-                    popupAnchor: [0, -20]
-                });
-
-                const vMarker = L.marker([pos.latitude, pos.longitude], {
-                    icon: vesselIcon,
-                    zIndexOffset: 800
+                const beaconMarker = L.marker([pos.latitude, pos.longitude], {
+                    icon: L.divIcon({
+                        html: beaconHtml,
+                        className: 'fleet-beacon-marker',
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14],
+                        popupAnchor: [0, -14]
+                    }),
+                    zIndexOffset: 600
                 }).addTo(map);
 
+                const isCoffee = s.commodity === 'COFFEE';
                 const popupHtml = `
                     <div class="p-2 font-sans text-xs min-w-[240px]">
                         <div class="flex items-center justify-between gap-1 pb-1 mb-1.5 border-b border-slate-200">
                             <span class="font-bold text-[10px] uppercase tracking-wider text-amber-800">
-                                📍 POSISI KARGO SAAT INI
+                                📍 POSISI REAL-TIME SAAT INI
                             </span>
                             <span class="px-1.5 py-0.5 rounded text-[9px] font-black ${isCoffee ? 'bg-amber-100 text-amber-900' : 'bg-orange-100 text-orange-900'}">
                                 ${s.commodity}
@@ -358,14 +419,166 @@
                         </div>
                     </div>
                 `;
-
-                vMarker.bindPopup(popupHtml);
-                markers[s.id] = vMarker;
+                beaconMarker.bindPopup(popupHtml);
+                staticMarkers[s.id] = beaconMarker;
                 bounds.extend([pos.latitude, pos.longitude]);
+            }
+
+            // 5. Generate Dense Steps for Moving Shopee Ship
+            if (cleanedRoute.length >= 2) {
+                const denseSteps = [];
+                for (let i = 0; i < cleanedRoute.length - 1; i++) {
+                    const p1 = cleanedRoute[i];
+                    const p2 = cleanedRoute[i + 1];
+
+                    const dLat = (p2[0] - p1[0]) * 111;
+                    const dLon = (p2[1] - p1[1]) * 111 * Math.cos((p1[0] + p2[0]) * Math.PI / 360);
+                    const distKm = Math.sqrt(dLat * dLat + dLon * dLon);
+                    const steps = Math.max(60, Math.min(250, Math.round(distKm * 0.08)));
+
+                    for (let st = 0; st < steps; st++) {
+                        const t = st / steps;
+                        const curLat = p1[0] + (p2[0] - p1[0]) * t;
+                        const curLon = p1[1] + (p2[1] - p1[1]) * t;
+                        const bearing = fleetCalculateBearing(curLat, curLon, p2[0], p2[1]);
+
+                        denseSteps.push({
+                            lat: curLat,
+                            lng: curLon,
+                            bearing: bearing
+                        });
+                    }
+                }
+
+                // Traveled Polyline for this vessel
+                const traveledLine = L.polyline([], {
+                    color: s.commodity === 'COCOA' ? '#C49A55' : '#10b981',
+                    weight: 3.5,
+                    opacity: 0.9
+                }).addTo(map);
+
+                // Initial start point staggered by shipment index
+                const startStep = (idx * 25) % Math.max(1, denseSteps.length);
+                const initPt = denseSteps[startStep] || denseSteps[0];
+
+                const isCoffee = s.commodity === 'COFFEE';
+                const vesselEmoji = isCoffee ? '☕' : '🍫';
+                const pulseBg = isCoffee ? 'bg-amber-400' : 'bg-orange-500';
+                const iconBg = isCoffee ? 'bg-[#38251D]' : 'bg-[#795548]';
+                const borderColor = isCoffee ? 'border-[#C49A55]' : 'border-amber-300';
+
+                const sailingHtml = `
+                    <div class="relative flex items-center justify-center cursor-pointer" style="width: 44px; height: 44px; margin-left: -22px; margin-top: -22px;">
+                        <span class="animate-ping absolute inline-flex h-10 w-10 rounded-full ${pulseBg} opacity-60"></span>
+                        <div class="relative inline-flex rounded-full h-8 w-8 ${iconBg} border-2 ${borderColor} shadow-2xl items-center justify-center text-white text-xs font-bold transition-transform duration-75 fleet-ship-icon-${s.id}">
+                            ${vesselEmoji}
+                        </div>
+                    </div>
+                `;
+
+                const vMarker = L.marker([initPt.lat, initPt.lng], {
+                    icon: L.divIcon({
+                        html: sailingHtml,
+                        className: 'fleet-sailing-marker',
+                        iconSize: [44, 44],
+                        iconAnchor: [22, 22],
+                        popupAnchor: [0, -22]
+                    }),
+                    zIndexOffset: 1000
+                }).addTo(map);
+
+                vMarker.bindPopup(`
+                    <div class="p-2 font-sans text-xs min-w-[220px]">
+                        <div class="flex items-center justify-between text-[10px] font-bold pb-1 border-b border-slate-100 text-amber-800">
+                            <span>🚢 KAPAL BERLAYAR (LIVE)</span>
+                            <span class="px-1.5 py-0.2 rounded font-black ${isCoffee ? 'bg-amber-100 text-amber-900' : 'bg-orange-100 text-orange-900'}">${s.commodity}</span>
+                        </div>
+                        <div class="text-sm font-extrabold text-slate-900 mt-1">${s.vessel_name}</div>
+                        <div class="text-slate-600 text-[11px] mt-0.5">${s.cargo_type} &bull; ${s.number}</div>
+                        <div class="mt-2 text-[10px] text-slate-500 space-y-0.5 bg-slate-50 p-2 rounded border border-slate-100">
+                            <div>Rute: ${origin.city} &rarr; ${dest.city}</div>
+                            <div>Kecepatan: 19.2 Knots</div>
+                            <div>Status: ${s.status}</div>
+                        </div>
+                        <div class="mt-2 text-right">
+                            <a href="${s.detail_url}" class="text-[10px] font-bold text-[#38251D] hover:text-[#C49A55] underline">Lihat Detail Pengiriman &rarr;</a>
+                        </div>
+                    </div>
+                `);
+
+                activeVessels.push({
+                    id: s.id,
+                    marker: vMarker,
+                    steps: denseSteps,
+                    currentStep: startStep,
+                    traveledLine: traveledLine
+                });
             }
         });
 
-        // Fit map bounds to view all active vessels
+        // 6. Global Multi-Vessel Sailing Animation Loop
+        function animateFleetFrame() {
+            if (!isFleetPlaying) return;
+
+            activeVessels.forEach(v => {
+                v.currentStep += fleetSpeed;
+                if (v.currentStep >= v.steps.length) {
+                    v.currentStep = 0;
+                }
+
+                const pt = v.steps[v.currentStep];
+                if (pt) {
+                    v.marker.setLatLng([pt.lat, pt.lng]);
+
+                    const iconElement = document.querySelector(`.fleet-ship-icon-${v.id}`);
+                    if (iconElement) {
+                        iconElement.style.transform = `rotate(${Math.round(pt.bearing)}deg)`;
+                    }
+
+                    const trail = v.steps.slice(0, v.currentStep + 1).map(p => [p.lat, p.lng]);
+                    v.traveledLine.setLatLngs(trail);
+                }
+            });
+        }
+
+        fleetAnimationInterval = setInterval(animateFleetFrame, 40);
+
+        // Fleet Play/Pause Handlers
+        const playPauseBtn = document.getElementById('fleet-btn-play-pause');
+        const playIcon = document.getElementById('fleet-play-icon');
+        const playText = document.getElementById('fleet-play-text');
+        if (playPauseBtn) {
+            playPauseBtn.addEventListener('click', function () {
+                isFleetPlaying = !isFleetPlaying;
+                if (isFleetPlaying) {
+                    playIcon.innerText = '⏸️';
+                    playText.innerText = 'Jeda Semua Kapal';
+                    fleetAnimationInterval = setInterval(animateFleetFrame, 40);
+                } else {
+                    playIcon.innerText = '▶️';
+                    playText.innerText = 'Lanjut Semua Kapal';
+                    clearInterval(fleetAnimationInterval);
+                }
+            });
+        }
+
+        const restartBtn = document.getElementById('fleet-btn-restart');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', function () {
+                activeVessels.forEach(v => {
+                    v.currentStep = 0;
+                    v.traveledLine.setLatLngs([]);
+                });
+                if (!isFleetPlaying) {
+                    isFleetPlaying = true;
+                    if (playIcon) playIcon.innerText = '⏸️';
+                    if (playText) playText.innerText = 'Jeda Semua Kapal';
+                    fleetAnimationInterval = setInterval(animateFleetFrame, 40);
+                }
+            });
+        }
+
+        // Fit map bounds
         if (!bounds.isEmpty()) {
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 8 });
         }
@@ -392,7 +605,7 @@
      * Focus on specific shipment when clicked in the directory
      */
     function focusShipment(id) {
-        const marker = markers[id];
+        const marker = staticMarkers[id];
         if (marker && map) {
             const latLng = marker.getLatLng();
             map.flyTo(latLng, 7, {
