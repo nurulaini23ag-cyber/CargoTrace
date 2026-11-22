@@ -20,7 +20,14 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Public Tracking Routes (No login required)
+// Public Landing & Tracking Routes (No login required)
+Route::get('/', function () {
+    if (Illuminate\Support\Facades\Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+    return view('welcome');
+})->name('home');
+
 Route::get('/track', [TrackingController::class, 'publicTrack'])->name('tracking.public');
 Route::get('/track/{number}', [TrackingController::class, 'trackNumber'])->name('tracking.search');
 
@@ -37,7 +44,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('home');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Global Live Cargo Fleet Map ("Peta Kargo & Posisi Barang")
