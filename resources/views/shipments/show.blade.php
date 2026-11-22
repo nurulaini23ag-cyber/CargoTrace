@@ -204,35 +204,80 @@
 
             <!-- Items Manifest Table -->
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-4 border-b border-slate-100">
-                    <h2 class="text-base font-bold text-slate-900">Cargo Manifest Items</h2>
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Cargo Manifest & Commodity Items</h2>
+                        <p class="text-xs text-slate-500">Official ocean freight manifest, product varieties, grades, and quality specs</p>
+                    </div>
+                    <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                        {{ $shipment->items->count() }} {{ Str::plural('Lot', $shipment->items->count()) }}
+                    </span>
                 </div>
-                <table class="w-full text-left text-xs text-slate-600">
-                    <thead class="bg-slate-50 uppercase text-[10px] tracking-wider text-slate-400">
-                        <tr>
-                            <th class="px-4 py-2.5">Item Description</th>
-                            <th class="px-4 py-2.5">Packaging</th>
-                            <th class="px-4 py-2.5">Quantity</th>
-                            <th class="px-4 py-2.5">Weight (kg)</th>
-                            <th class="px-4 py-2.5">Volume (m³)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @forelse($shipment->items as $item)
-                        <tr>
-                            <td class="px-4 py-2.5 font-medium text-slate-800">{{ $item->item_description }}</td>
-                            <td class="px-4 py-2.5">{{ $item->package_type }}</td>
-                            <td class="px-4 py-2.5 font-semibold">{{ $item->quantity }}</td>
-                            <td class="px-4 py-2.5">{{ $item->weight_kg }}</td>
-                            <td class="px-4 py-2.5">{{ $item->volume_cbm }}</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="5" class="px-4 py-4 text-center text-slate-400">No detailed items recorded.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 uppercase text-[10px] tracking-wider text-slate-500 border-b border-slate-100">
+                            <tr>
+                                <th class="px-4 py-3">Commodity & Variety</th>
+                                <th class="px-4 py-3">Grade & HS Code</th>
+                                <th class="px-4 py-3">Packaging & Bags</th>
+                                <th class="px-4 py-3">Net Weight</th>
+                                <th class="px-4 py-3">Moisture & Temp</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse($shipment->items as $item)
+                            <tr class="hover:bg-slate-50/60 transition">
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-1.5 mb-0.5">
+                                        @if($item->isCocoa() || str_contains(strtolower($item->product_name ?? ''), 'cocoa'))
+                                            <span class="px-1.5 py-0.5 bg-[#795548]/10 text-[#795548] border border-[#795548]/20 rounded font-black text-[10px] uppercase">
+                                                🍫 COCOA
+                                            </span>
+                                        @else
+                                            <span class="px-1.5 py-0.5 bg-[#38251D]/10 text-[#38251D] border border-[#38251D]/20 rounded font-black text-[10px] uppercase">
+                                                ☕ COFFEE
+                                            </span>
+                                        @endif
+                                        <span class="font-bold text-slate-900 text-xs">{{ $item->product_name ?? $item->item_description }}</span>
+                                    </div>
+                                    <div class="text-[11px] text-slate-500">
+                                        Variety: {{ $item->variety ?? 'Standard Regional Blend' }}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="font-semibold text-slate-800">{{ $item->grade ?? 'Export Standard' }}</div>
+                                    <div class="text-[11px] text-slate-400 font-mono">HS: {{ $item->hs_code ?? 'N/A' }}</div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="font-semibold text-slate-800">{{ $item->package_count ?? $item->quantity }} pkgs</div>
+                                    <div class="text-[11px] text-slate-400">{{ str_replace('_', ' ', $item->package_type ?? 'JUTE_BAG_60KG') }}</div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">{{ number_format($item->net_weight ?: $item->weight_kg, 2) }} kg</div>
+                                    <div class="text-[11px] text-slate-400">{{ $item->volume_cbm ?? '--' }} m³</div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-1 font-semibold text-slate-800">
+                                        <span>💧 {{ $item->moisture_content ? $item->moisture_content . '%' : 'N/A' }}</span>
+                                        @if($item->moisture_content && $item->moisture_content > 12.5)
+                                            <span class="text-[9px] px-1 py-0.2 bg-amber-100 text-amber-800 rounded font-bold">High</span>
+                                        @elseif($item->moisture_content)
+                                            <span class="text-[9px] px-1 py-0.2 bg-emerald-100 text-emerald-800 rounded font-bold">Optimal</span>
+                                        @endif
+                                    </div>
+                                    <div class="text-[11px] text-slate-400">
+                                        Target: {{ $item->temperature_target ? $item->temperature_target . '°C' : 'Ambient' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5" class="px-4 py-4 text-center text-slate-400">No detailed commodity items recorded.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </div>

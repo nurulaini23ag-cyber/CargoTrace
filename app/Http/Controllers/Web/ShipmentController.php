@@ -40,7 +40,7 @@ class ShipmentController extends Controller
     public function index(Request $request): View
     {
         $user = Auth::user();
-        $query = Shipment::with(['customer', 'carrier', 'origin', 'destination', 'latestTrackingEvent']);
+        $query = Shipment::with(['customer', 'carrier', 'origin', 'destination', 'items', 'latestTrackingEvent']);
 
         if ($user->isCustomer()) {
             $query->where('customer_id', $user->id);
@@ -51,9 +51,25 @@ class ShipmentController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('shipment_number', 'like', "%{$search}%")
                   ->orWhere('cargo_type', 'like', "%{$search}%")
+                  ->orWhereHas('items', function ($iq) use ($search) {
+                      $iq->where('product_name', 'like', "%{$search}%")
+                         ->orWhere('variety', 'like', "%{$search}%")
+                         ->orWhere('grade', 'like', "%{$search}%")
+                         ->orWhere('item_description', 'like', "%{$search}%");
+                  })
                   ->orWhereHas('customer', function ($cq) use ($search) {
                       $cq->where('name', 'like', "%{$search}%")
                          ->orWhere('company_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('cargo_category')) {
+            $category = strtoupper($request->cargo_category);
+            $query->where(function ($q) use ($category) {
+                $q->where('cargo_type', 'like', "%{$category}%")
+                  ->orWhereHas('items', function ($iq) use ($category) {
+                      $iq->where('product_category', $category);
                   });
             });
         }

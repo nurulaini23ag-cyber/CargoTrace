@@ -71,14 +71,20 @@ class ShipmentService
     }
 
     /**
-     * Generate unique shipment tracking number.
+     * Generate unique shipment tracking number in CTC-YYYY-XXXX format.
      */
     public function generateShipmentNumber(): string
     {
         $year = date('Y');
-        do {
-            $code = 'TRC-' . $year . '-' . strtoupper(Str::random(6));
-        } while (Shipment::where('shipment_number', $code)->exists());
+        $lastId = Shipment::withTrashed()->max('id') ?? 0;
+        $num = str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
+        $code = "CTC-{$year}-{$num}";
+
+        while (Shipment::where('shipment_number', $code)->exists()) {
+            $lastId++;
+            $num = str_pad($lastId, 4, '0', STR_PAD_LEFT);
+            $code = "CTC-{$year}-{$num}";
+        }
 
         return $code;
     }
@@ -128,12 +134,20 @@ class ShipmentService
             if (!empty($data['items']) && is_array($data['items'])) {
                 foreach ($data['items'] as $itemData) {
                     $shipment->items()->create([
-                        'item_description' => $itemData['item_description'],
+                        'product_category' => $itemData['product_category'] ?? null,
+                        'product_name' => $itemData['product_name'] ?? ($itemData['item_description'] ?? 'Commodity Cargo Item'),
+                        'variety' => $itemData['variety'] ?? null,
+                        'grade' => $itemData['grade'] ?? null,
+                        'item_description' => $itemData['item_description'] ?? ($itemData['product_name'] ?? 'Cocoa/Coffee Cargo Item'),
                         'hs_code' => $itemData['hs_code'] ?? null,
-                        'quantity' => $itemData['quantity'] ?? 1,
-                        'package_type' => $itemData['package_type'] ?? 'BOX',
-                        'weight_kg' => $itemData['weight_kg'] ?? 0,
+                        'quantity' => $itemData['quantity'] ?? ($itemData['package_count'] ?? 1),
+                        'package_type' => $itemData['package_type'] ?? 'JUTE_BAG_60KG',
+                        'package_count' => $itemData['package_count'] ?? ($itemData['quantity'] ?? 1),
+                        'net_weight' => $itemData['net_weight'] ?? ($itemData['weight_kg'] ?? 0),
+                        'weight_kg' => $itemData['weight_kg'] ?? ($itemData['net_weight'] ?? 0),
                         'volume_cbm' => $itemData['volume_cbm'] ?? 0,
+                        'moisture_content' => $itemData['moisture_content'] ?? null,
+                        'temperature_target' => $itemData['temperature_target'] ?? null,
                         'is_hazardous' => !empty($itemData['is_hazardous']),
                     ]);
                 }
@@ -213,6 +227,30 @@ class ShipmentService
             }
 
             $shipment->save();
+
+            // Sync items if provided
+            if (isset($data['items']) && is_array($data['items'])) {
+                $shipment->items()->delete();
+                foreach ($data['items'] as $itemData) {
+                    $shipment->items()->create([
+                        'product_category' => $itemData['product_category'] ?? null,
+                        'product_name' => $itemData['product_name'] ?? ($itemData['item_description'] ?? 'Commodity Cargo Item'),
+                        'variety' => $itemData['variety'] ?? null,
+                        'grade' => $itemData['grade'] ?? null,
+                        'item_description' => $itemData['item_description'] ?? ($itemData['product_name'] ?? 'Cocoa/Coffee Cargo Item'),
+                        'hs_code' => $itemData['hs_code'] ?? null,
+                        'quantity' => $itemData['quantity'] ?? ($itemData['package_count'] ?? 1),
+                        'package_type' => $itemData['package_type'] ?? 'JUTE_BAG_60KG',
+                        'package_count' => $itemData['package_count'] ?? ($itemData['quantity'] ?? 1),
+                        'net_weight' => $itemData['net_weight'] ?? ($itemData['weight_kg'] ?? 0),
+                        'weight_kg' => $itemData['weight_kg'] ?? ($itemData['net_weight'] ?? 0),
+                        'volume_cbm' => $itemData['volume_cbm'] ?? 0,
+                        'moisture_content' => $itemData['moisture_content'] ?? null,
+                        'temperature_target' => $itemData['temperature_target'] ?? null,
+                        'is_hazardous' => !empty($itemData['is_hazardous']),
+                    ]);
+                }
+            }
 
             // Audit
             $this->auditService->log(

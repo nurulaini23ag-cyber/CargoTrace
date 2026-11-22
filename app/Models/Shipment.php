@@ -121,12 +121,14 @@ class Shipment extends Model
         parent::boot();
 
         static::creating(function ($shipment) {
-            if (empty($shipment->tracking_number)) {
-                $lastId = static::withTrashed()->max('id') ?? 0;
-                $shipment->tracking_number = 'CT-2026-' . str_pad($lastId + 1, 6, '0', STR_PAD_LEFT);
-            }
+            $year = date('Y');
+            $lastId = static::withTrashed()->max('id') ?? 0;
+            $code = 'CTC-' . $year . '-' . str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
             if (empty($shipment->shipment_number)) {
-                $shipment->shipment_number = $shipment->tracking_number;
+                $shipment->shipment_number = $code;
+            }
+            if (empty($shipment->tracking_number)) {
+                $shipment->tracking_number = $shipment->shipment_number;
             }
         });
     }

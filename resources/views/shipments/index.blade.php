@@ -13,7 +13,7 @@
         </div>
         @if(Auth::user()->isAdmin() || Auth::user()->isOperator())
         <div>
-            <a href="{{ route('shipments.create') }}" class="inline-flex items-center px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold rounded-lg shadow-sm transition">
+            <a href="{{ route('shipments.create') }}" class="inline-flex items-center px-4 py-2 bg-[#38251D] hover:bg-[#795548] text-white text-sm font-bold rounded-lg shadow-sm transition">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 New Shipment
             </a>
@@ -24,19 +24,29 @@
     <!-- Multi-Attribute Search & Filter Panel (Server-Side) -->
     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
         <form action="{{ route('shipments.index') }}" method="GET" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <!-- Search Text Input -->
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Search Reference / Cargo</label>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Search Reference / Cargo / Variety</label>
                     <input type="text" name="search" value="{{ request('search') }}"
-                        placeholder="Search by shipment #, cargo type, or customer..."
-                        class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                        placeholder="Search shipment #, Gayo, Forastero, buyer..."
+                        class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-amber-600 focus:ring-1 focus:ring-amber-600">
+                </div>
+
+                <!-- Commodity Category Filter -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Commodity</label>
+                    <select name="cargo_category" class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-amber-600 focus:ring-1 focus:ring-amber-600">
+                        <option value="">All Commodities</option>
+                        <option value="COFFEE" {{ request('cargo_category') === 'COFFEE' ? 'selected' : '' }}>☕ Coffee (Kopi)</option>
+                        <option value="COCOA" {{ request('cargo_category') === 'COCOA' ? 'selected' : '' }}>🍫 Cocoa (Kakao)</option>
+                    </select>
                 </div>
 
                 <!-- Status Filter -->
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Status</label>
-                    <select name="status" class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    <select name="status" class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-amber-600 focus:ring-1 focus:ring-amber-600">
                         <option value="">All Statuses</option>
                         <option value="CREATED" {{ request('status') === 'CREATED' ? 'selected' : '' }}>CREATED</option>
                         <option value="BOOKED" {{ request('status') === 'BOOKED' ? 'selected' : '' }}>BOOKED</option>
@@ -49,8 +59,8 @@
 
                 <!-- Carrier Filter -->
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Carrier</label>
-                    <select name="carrier_id" class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Ocean Carrier</label>
+                    <select name="carrier_id" class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-amber-600 focus:ring-1 focus:ring-amber-600">
                         <option value="">All Carriers</option>
                         @foreach($carriers as $carrier)
                             <option value="{{ $carrier->id }}" {{ request('carrier_id') == $carrier->id ? 'selected' : '' }}>
@@ -153,18 +163,36 @@
                     @forelse($shipments as $shipment)
                     <tr class="hover:bg-slate-50/80 transition">
                         <td class="px-5 py-4">
-                            <a href="{{ route('shipments.show', $shipment->id) }}" class="font-bold text-sky-600 hover:underline text-sm">
+                            <a href="{{ route('shipments.show', $shipment->id) }}" class="font-bold text-[#38251D] hover:text-[#795548] text-sm flex items-center gap-1.5">
                                 {{ $shipment->shipment_number }}
                             </a>
                             <div class="text-[11px] text-slate-400 mt-0.5">
-                                {{ $shipment->weight }} kg &bull; {{ $shipment->volume }} m³
+                                {{ number_format($shipment->weight, 0) }} kg &bull; {{ $shipment->volume }} m³
                             </div>
                         </td>
 
                         <td class="px-5 py-4">
-                            <div class="font-semibold text-slate-900 text-xs">{{ $shipment->customer->name }}</div>
-                            <div class="text-xs text-slate-500">{{ $shipment->customer->company_name ?? 'Individual' }}</div>
-                            <div class="text-[11px] text-slate-400 mt-0.5">{{ $shipment->cargo_type }}</div>
+                            <div class="flex items-center gap-1.5 mb-1">
+                                @php
+                                    $isCocoa = str_contains(strtolower($shipment->cargo_type), 'cocoa') || $shipment->items->contains(fn($i) => $i->isCocoa());
+                                @endphp
+                                @if($isCocoa)
+                                    <span class="px-1.5 py-0.5 bg-[#795548]/10 text-[#795548] border border-[#795548]/20 rounded font-black text-[9px] uppercase">
+                                        🍫 COCOA
+                                    </span>
+                                @else
+                                    <span class="px-1.5 py-0.5 bg-[#38251D]/10 text-[#38251D] border border-[#38251D]/20 rounded font-black text-[9px] uppercase">
+                                        ☕ COFFEE
+                                    </span>
+                                @endif
+                                <span class="font-bold text-slate-900 text-xs truncate max-w-xs">{{ $shipment->cargo_type }}</span>
+                            </div>
+                            <div class="text-xs text-slate-600 font-medium">{{ $shipment->customer->name }} <span class="text-slate-400 text-[11px]">({{ $shipment->customer->company_name ?? 'Consignee' }})</span></div>
+                            @if($shipment->items->first())
+                                <div class="text-[11px] text-slate-400 mt-0.5">
+                                    {{ $shipment->items->first()->variety ?? 'Specialty' }} &bull; {{ $shipment->items->first()->grade ?? 'Grade 1' }}
+                                </div>
+                            @endif
                         </td>
 
                         <td class="px-5 py-4 text-xs">
