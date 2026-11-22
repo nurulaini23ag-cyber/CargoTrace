@@ -397,3 +397,4 @@
 - [2026-11-21 18:15:00 +0700] docs(architecture): supplement layer diagram with event-driven notification lifecycle
 - [2026-11-21 19:50:00 +0700] perf(query): benchmark tracking timeline queries and enforce primary key ordering
 - [2026-11-22 09:30:00 +0700] feat(dashboard): optimize fleet status summary metric counter performance
+- [2026-11-22 11:00:00 +0700] docs(deployment): update local artisan serve background launch documentation
