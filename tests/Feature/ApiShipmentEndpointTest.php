@@ -225,4 +225,82 @@ class ApiShipmentEndpointTest extends TestCase
         $locRes->assertStatus(200);
         $locRes->assertJsonPath('status', 'success');
     }
+
+    public function test_post_transition_status_advances_lifecycle_state_200(): void
+    {
+        Sanctum::actingAs($this->operator);
+
+        $freshShipment = Shipment::create([
+            'shipment_number' => 'CTC-TRANS-001',
+            'customer_id' => $this->customer->id,
+            'carrier_id' => $this->carrier->id,
+            'origin_id' => $this->origin->id,
+            'destination_id' => $this->dest->id,
+            'cargo_type' => 'COFFEE',
+            'weight' => 20000,
+            'volume' => 33,
+            'current_status' => Shipment::STATUS_CREATED,
+            'expected_departure' => now(),
+            'expected_arrival' => now()->addDays(14),
+            'estimated_arrival' => now()->addDays(14),
+        ]);
+
+        $res = $this->postJson("/api/shipments/{$freshShipment->id}/status", [
+            'status' => Shipment::STATUS_BOOKED,
+            'reason' => 'Booking space confirmed on vessel.',
+        ]);
+
+        $res->assertStatus(200);
+        $res->assertJsonPath('status', 'success');
+        $this->assertEquals(Shipment::STATUS_BOOKED, $freshShipment->fresh()->current_status);
+
+        // Advance to PICKED_UP
+        $res2 = $this->postJson("/api/shipments/{$freshShipment->id}/status", [
+            'status' => Shipment::STATUS_PICKED_UP,
+            'reason' => 'Container received at CFS warehouse.',
+        ]);
+        $res2->assertStatus(200);
+        $this->assertEquals(Shipment::STATUS_PICKED_UP, $freshShipment->fresh()->current_status);
+    }
+
+    public function test_post_transition_invalid_transition_fails_422(): void
+    {
+        Sanctum::actingAs($this->operator);
+
+        $freshShipment = Shipment::create([
+            'shipment_number' => 'CTC-TRANS-002',
+            'customer_id' => $this->customer->id,
+            'carrier_id' => $this->carrier->id,
+            'origin_id' => $this->origin->id,
+            'destination_id' => $this->dest->id,
+            'cargo_type' => 'COCOA',
+            'weight' => 15000,
+            'volume' => 25,
+            'current_status' => Shipment::STATUS_CREATED,
+            'expected_departure' => now(),
+            'expected_arrival' => now()->addDays(14),
+            'estimated_arrival' => now()->addDays(14),
+        ]);
+
+        // Attempt invalid skip from CREATED directly to DELIVERED
+        $res = $this->postJson("/api/shipments/{$freshShipment->id}/status", [
+            'status' => Shipment::STATUS_DELIVERED,
+            'reason' => 'Direct delivery attempt.',
+        ]);
+
+        $res->assertStatus(422);
+        $res->assertJsonPath('status', 'error');
+        $this->assertEquals(Shipment::STATUS_CREATED, $freshShipment->fresh()->current_status);
+    }
+
+    public function test_external_services_weather_and_geocode_endpoints(): void
+    {
+        Sanctum::actingAs($this->operator);
+
+        $weatherRes = $this->getJson('/api/external/weather?latitude=3.7833&longitude=98.6833');
+        $weatherRes->assertStatus(200);
+
+        $geoRes = $this->getJson('/api/external/geocode?q=Rotterdam');
+        $geoRes->assertStatus(200);
+    }
 }

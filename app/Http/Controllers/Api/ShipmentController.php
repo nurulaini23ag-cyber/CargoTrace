@@ -341,4 +341,45 @@ class ShipmentController extends Controller
             'data' => $exception->load(['logger', 'shipment']),
         ], 201);
     }
+
+    /**
+     * Transition shipment status through the formal state machine (Admin/Operator only).
+     */
+    public function transition(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'status' => 'required|string|in:BOOKED,PICKED_UP,IN_TRANSIT,DELIVERED,CANCELLED',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $shipment = Shipment::find($id);
+
+        if (!$shipment) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Shipment not found.',
+            ], 404);
+        }
+
+        try {
+            $updated = $this->shipmentService->transitionStatus(
+                $shipment,
+                $request->input('status'),
+                $request->input('reason'),
+                $request->user(),
+                true
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Shipment status successfully transitioned to {$updated->current_status}.",
+                'data' => $updated->fresh(['origin', 'destination', 'carrier', 'trackingEvents']),
+            ], 200);
+        } catch (DomainException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
 }

@@ -39,6 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin,operator')->group(function () {
         Route::post('/shipments', [ShipmentController::class, 'store']);
         Route::match(['put', 'patch'], '/shipments/{id}', [ShipmentController::class, 'update']);
+        Route::post('/shipments/{id}/status', [ShipmentController::class, 'transition']);
         Route::post('/shipments/{id}/tracking', [ShipmentController::class, 'storeTracking']);
         Route::post('/shipments/{id}/exceptions', [ShipmentController::class, 'storeException']);
         Route::patch('/exceptions/{id}', [ExceptionController::class, 'update']);

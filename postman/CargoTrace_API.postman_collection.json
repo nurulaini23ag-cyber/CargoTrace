@@ -1,0 +1,657 @@
+{
+  "info": {
+    "_postman_id": "cargotrace-api-v2-collection",
+    "name": "CargoTrace Global Maritime API v2.1",
+    "description": "Complete REST API for CargoTrace — Global Cocoa & Coffee Shipment Visibility Platform.\nCompliant with UAS specification (Slides 12, 13 & 14).\nSupports Sanctum Bearer Token Authentication, Role-based Access Control, Deterministic Delay & State Machine Transitions.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "YOUR_SANCTUM_BEARER_TOKEN",
+      "type": "string"
+    },
+    {
+      "key": "shipment_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "exception_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Authentication & Diagnostics",
+      "item": [
+        {
+          "name": "System Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set(\"auth_token\", jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@cargotrace.com\",\n    \"password\": \"password123\",\n    \"device_name\": \"postman_client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"operator@cargotrace.com\",\n    \"password\": \"password123\",\n    \"device_name\": \"postman_client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"customer1@cargotrace.com\",\n    \"password\": \"password123\",\n    \"device_name\": \"postman_client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": ["{{base_url}}"],
+              "path": ["user"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/logout",
+              "host": ["{{base_url}}"],
+              "path": ["logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Shipments Management",
+      "item": [
+        {
+          "name": "List Shipments (Filtered & Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments?status=IN_TRANSIT&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["shipments"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "IN_TRANSIT"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single Shipment Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments/{{shipment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "{{shipment_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Cocoa/Coffee Shipment (Admin/Operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"customer_id\": 3,\n    \"carrier_id\": 1,\n    \"origin_id\": 1,\n    \"destination_id\": 2,\n    \"cargo_type\": \"COFFEE\",\n    \"commodity\": \"COFFEE\",\n    \"container_type\": \"20ft Vent\",\n    \"container_number\": \"MSCU9876543\",\n    \"seal_number\": \"SL-998811\",\n    \"vessel_name\": \"MSC Amsterdam\",\n    \"voyage_number\": \"VOY-2026-99\",\n    \"weight\": 21600.00,\n    \"volume\": 38.5,\n    \"departure_date\": \"2026-11-25 08:00:00\",\n    \"expected_arrival\": \"2026-12-18 16:00:00\",\n    \"notes\": \"Sumatra Mandheling Grade 1 export batch\",\n    \"items\": [\n        {\n            \"item_name\": \"Sumatra Mandheling Arabica Grade 1\",\n            \"commodity_category\": \"COFFEE\",\n            \"variety\": \"Ateng / Typica\",\n            \"grade\": \"Grade 1 Triple-Picked\",\n            \"package_count\": 360,\n            \"package_type\": \"Jute Bag with GrainPro\",\n            \"net_weight\": 21600.00,\n            \"moisture_content\": 12.00,\n            \"temperature_target\": 20.00,\n            \"hs_code\": \"0901.11.10\"\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipments",
+              "host": ["{{base_url}}"],
+              "path": ["shipments"]
+            }
+          }
+        },
+        {
+          "name": "Transition Shipment Status (State Machine)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"PICKED_UP\",\n    \"reason\": \"Cargo loaded onto feeder vessel at Belawan Port.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipments/{{shipment_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "{{shipment_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Update Shipment Details",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"carrier_id\": 1,\n    \"origin_id\": 1,\n    \"destination_id\": 2,\n    \"cargo_type\": \"COFFEE\",\n    \"container_type\": \"20ft Vent\",\n    \"container_number\": \"MSCU9876543\",\n    \"vessel_name\": \"MSC Amsterdam V2\",\n    \"weight\": 21600.00,\n    \"departure_date\": \"2026-11-25 08:00:00\",\n    \"expected_arrival\": \"2026-12-18 16:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipments/{{shipment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "{{shipment_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Shipment (Admin only)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments/{{shipment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "{{shipment_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Tracking & Waypoints",
+      "item": [
+        {
+          "name": "Get Tracking Timeline",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments/{{shipment_id}}/tracking",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "{{shipment_id}}", "tracking"]
+            }
+          }
+        },
+        {
+          "name": "Append Tracking Event (Admin/Operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"IN_TRANSIT\",\n    \"location_name\": \"Suez Canal Transit Zone, Egypt\",\n    \"latitude\": 29.9744,\n    \"longitude\": 32.5598,\n    \"timestamp\": \"2026-11-22 18:00:00\",\n    \"notes\": \"Vessel entered northbound convoy under fair navigation conditions.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipments/{{shipment_id}}/tracking",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "{{shipment_id}}", "tracking"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Exceptions & Incident Management",
+      "item": [
+        {
+          "name": "Get Shipment Exceptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments/{{shipment_id}}/exceptions",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "{{shipment_id}}", "exceptions"]
+            }
+          }
+        },
+        {
+          "name": "Log Shipment Exception (Admin/Operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"exception_type\": \"WEATHER_DELAY\",\n    \"severity\": \"MEDIUM\",\n    \"delay_hours\": 36,\n    \"description\": \"Strong monsoon headwind in Indian Ocean reduced cruising speed to 11 knots.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipments/{{shipment_id}}/exceptions",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "{{shipment_id}}", "exceptions"]
+            }
+          }
+        },
+        {
+          "name": "Resolve / Update Exception",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"RESOLVED\",\n    \"resolution_notes\": \"Vessel cleared heavy weather zone. Speed resumed to 19 knots with arrival re-estimated.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/exceptions/{{exception_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["exceptions", "{{exception_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Master Data (Carriers & Locations)",
+      "item": [
+        {
+          "name": "List Carriers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carriers",
+              "host": ["{{base_url}}"],
+              "path": ["carriers"]
+            }
+          }
+        },
+        {
+          "name": "Create Carrier (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Hapag-Lloyd Maritime Express\",\n    \"code\": \"HAPAG\",\n    \"mode\": \"SEA\",\n    \"contact_email\": \"ops@hapag-lloyd.com\",\n    \"contact_phone\": \"+49 40 3001 0\",\n    \"website\": \"https://www.hapag-lloyd.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/carriers",
+              "host": ["{{base_url}}"],
+              "path": ["carriers"]
+            }
+          }
+        },
+        {
+          "name": "List Maritime Ports & Locations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/locations",
+              "host": ["{{base_url}}"],
+              "path": ["locations"]
+            }
+          }
+        },
+        {
+          "name": "Create Port Location (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"IDSUB\",\n    \"name\": \"Port of Tanjung Perak\",\n    \"type\": \"PORT\",\n    \"city\": \"Surabaya\",\n    \"country\": \"Indonesia\",\n    \"latitude\": -7.1950,\n    \"longitude\": 112.7350\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations",
+              "host": ["{{base_url}}"],
+              "path": ["locations"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. External Services Integration",
+      "item": [
+        {
+          "name": "Open-Meteo Marine Weather Query",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/external/weather?latitude=3.7833&longitude=98.6833",
+              "host": ["{{base_url}}"],
+              "path": ["external", "weather"],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "3.7833"
+                },
+                {
+                  "key": "longitude",
+                  "value": "98.6833"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "OpenStreetMap Nominatim Geocoding",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/external/geocode?q=Port+of+Rotterdam",
+              "host": ["{{base_url}}"],
+              "path": ["external", "geocode"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Port of Rotterdam"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
