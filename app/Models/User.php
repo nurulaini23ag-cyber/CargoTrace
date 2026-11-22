@@ -5,14 +5,21 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
+
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_ADMINISTRATOR = 'administrator';
+    public const ROLE_EXPORTER = 'exporter';
+    public const ROLE_IMPORTER = 'importer';
+    public const ROLE_CUSTOMER = 'customer';
+    public const ROLE_OPERATOR = 'operator';
 
     protected $fillable = [
         'name',
@@ -36,13 +43,24 @@ class User extends Authenticatable
         ];
     }
 
-    public const ROLE_ADMIN = 'admin';
-    public const ROLE_OPERATOR = 'operator';
-    public const ROLE_CUSTOMER = 'customer';
-
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_ADMINISTRATOR]);
+    }
+
+    public function isExporter(): bool
+    {
+        return $this->role === self::ROLE_EXPORTER;
+    }
+
+    public function isImporter(): bool
+    {
+        return $this->role === self::ROLE_IMPORTER;
+    }
+
+    public function isCustomer(): bool
+    {
+        return $this->role === self::ROLE_CUSTOMER;
     }
 
     public function isOperator(): bool
@@ -50,9 +68,24 @@ class User extends Authenticatable
         return $this->role === self::ROLE_OPERATOR;
     }
 
-    public function isCustomer(): bool
+    public function canManageCommodities(): bool
     {
-        return $this->role === self::ROLE_CUSTOMER;
+        return $this->isAdmin() || $this->isExporter() || $this->isOperator();
+    }
+
+    public function supplier(): HasOne
+    {
+        return $this->hasOne(Supplier::class);
+    }
+
+    public function buyer(): HasOne
+    {
+        return $this->hasOne(Buyer::class);
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(TradeTransaction::class);
     }
 
     public function shipments(): HasMany
