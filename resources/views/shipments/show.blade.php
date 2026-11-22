@@ -69,7 +69,13 @@
 
     <!-- Status Lifecycle State Machine Progress Bar -->
     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-        <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Lifecycle State Machine Flow</div>
+        <div class="flex items-center justify-between text-xs mb-3">
+            <span class="font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-[#38251D]"></span>
+                Maritime Lifecycle State Machine Flow
+            </span>
+            <span class="text-[11px] text-slate-400 font-medium">Linear Deterministic Progression</span>
+        </div>
         @php
             $statuses = ['CREATED', 'BOOKED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED'];
             $currentIndex = array_search($shipment->current_status, $statuses);
@@ -84,8 +90,8 @@
                 @endphp
                 <div class="flex flex-col items-center">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 transition
-                        @if($isCurrent) bg-sky-600 text-white ring-4 ring-sky-100 shadow
-                        @elseif($isPassed) bg-emerald-500 text-white
+                        @if($isCurrent) bg-[#38251D] text-white ring-4 ring-[#E8D7B9] shadow
+                        @elseif($isPassed) bg-emerald-600 text-white
                         @else bg-slate-100 text-slate-400 border border-slate-200 @endif">
                         @if($isPassed && !$isCurrent)
                             &check;
@@ -93,8 +99,16 @@
                             {{ $idx + 1 }}
                         @endif
                     </div>
-                    <span class="font-semibold {{ $isCurrent ? 'text-sky-700 font-bold' : ($isPassed ? 'text-slate-800' : 'text-slate-400') }}">
+                    <span class="font-bold {{ $isCurrent ? 'text-[#38251D]' : ($isPassed ? 'text-slate-800' : 'text-slate-400') }}">
                         {{ $st }}
+                    </span>
+                    <span class="text-[10px] text-slate-400 mt-0.5 hidden sm:inline">
+                        @if($st === 'CREATED') Booking Placed
+                        @elseif($st === 'BOOKED') Slot Allocated
+                        @elseif($st === 'PICKED_UP') CFS Gate-In
+                        @elseif($st === 'IN_TRANSIT') Ocean Voyage
+                        @elseif($st === 'DELIVERED') Consignee Release
+                        @endif
                     </span>
                 </div>
             @endforeach
@@ -386,37 +400,79 @@
             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div>
-                        <h2 class="text-base font-bold text-slate-900">Tracking Timeline</h2>
-                        <p class="text-xs text-slate-400">Append-only historical chain of custody</p>
+                        <div class="flex items-center space-x-2">
+                            <h2 class="text-base font-bold text-slate-900">Tracking Timeline</h2>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#E8D7B9]/40 text-[#38251D] border border-[#E8D7B9]">
+                                {{ $shipment->trackingEvents->count() }} Events
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400">Append-only chronological audit trail of sea freight custody</p>
                     </div>
                     @if(Auth::user()->isAdmin() || Auth::user()->isOperator())
                     <button type="button" onclick="document.getElementById('add-event-modal').classList.toggle('hidden')"
-                        class="px-2.5 py-1 text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 rounded border border-sky-200 transition">
-                        + Add Event
+                        class="px-2.5 py-1 text-xs font-bold bg-[#38251D] text-white hover:bg-[#795548] rounded-lg shadow-sm transition">
+                        + Add Waypoint Event
                     </button>
                     @endif
                 </div>
 
                 <!-- Timeline Feed -->
-                <div class="space-y-4 relative pl-4 border-l-2 border-slate-200">
+                <div class="space-y-4 relative pl-4 border-l-2 border-[#E8D7B9]">
                     @forelse($shipment->trackingEvents as $event)
                     <div class="relative group">
-                        <!-- Bullet indicator -->
-                        <span class="absolute -left-[23px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white
-                            {{ $event->is_exception_event ? 'bg-rose-500 ring-2 ring-rose-200' : 'bg-sky-500 ring-2 ring-sky-200' }}"></span>
+                        <!-- Bullet indicator with icon -->
+                        @php
+                            $bulletBg = 'bg-[#38251D]';
+                            if ($event->is_exception_event || $event->event_type === 'EXCEPTION') {
+                                $bulletBg = 'bg-rose-600 ring-2 ring-rose-200';
+                            } elseif ($event->event_type === 'DELIVERED') {
+                                $bulletBg = 'bg-emerald-600 ring-2 ring-emerald-200';
+                            } elseif ($event->event_type === 'IN_TRANSIT' || $event->event_type === 'DEPARTED') {
+                                $bulletBg = 'bg-sky-600 ring-2 ring-sky-200';
+                            } elseif ($event->event_type === 'CUSTOMS_HOLD') {
+                                $bulletBg = 'bg-amber-600 ring-2 ring-amber-200';
+                            }
+                        @endphp
+                        <span class="absolute -left-[23px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white {{ $bulletBg }}"></span>
 
                         <div class="flex items-center justify-between text-xs">
-                            <span class="font-bold text-slate-900">{{ $event->event_type }}</span>
-                            <span class="text-[11px] text-slate-400 font-mono">{{ $event->event_time->format('M d, Y H:i') }}</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="font-black text-slate-900">{{ $event->event_type }}</span>
+                                @if($event->status)
+                                    <span class="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase
+                                        @if($event->status === 'DELIVERED') bg-emerald-100 text-emerald-800
+                                        @elseif($event->status === 'IN_TRANSIT') bg-sky-100 text-sky-800
+                                        @elseif($event->status === 'CANCELLED') bg-rose-100 text-rose-800
+                                        @else bg-slate-100 text-slate-700 @endif">
+                                        {{ $event->status }}
+                                    </span>
+                                @endif
+                            </div>
+                            <span class="text-[11px] text-slate-400 font-mono">{{ $event->event_time->format('M d, Y · H:i') }}</span>
                         </div>
-                        <div class="text-xs font-semibold text-slate-700 mt-0.5 flex items-center space-x-1">
-                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            <span>{{ $event->location_name }}</span>
+
+                        <div class="text-xs font-semibold text-slate-700 mt-1 flex items-center justify-between">
+                            <div class="flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5 text-[#795548]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <span>{{ $event->location_name }}</span>
+                            </div>
+                            @if($event->latitude && $event->longitude)
+                                <span class="text-[10px] font-mono text-slate-400">
+                                    {{ number_format($event->latitude, 3) }}, {{ number_format($event->longitude, 3) }}
+                                </span>
+                            @endif
                         </div>
-                        <p class="text-xs text-slate-600 mt-1 {{ $event->is_exception_event ? 'bg-rose-50 p-2 rounded text-rose-900 border border-rose-200' : '' }}">
+
+                        <p class="text-xs text-slate-600 mt-1 p-2 rounded-lg {{ $event->is_exception_event ? 'bg-rose-50 text-rose-900 border border-rose-200' : 'bg-slate-50 border border-slate-100' }}">
                             {{ $event->description }}
                         </p>
-                        <div class="text-[10px] text-slate-400 mt-1">Logged by: {{ $event->creator->name }}</div>
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                            <span>Logged by: {{ $event->creator->name ?? 'System' }}</span>
+                            <span>{{ $event->event_time->diffForHumans() }}</span>
+                        </div>
                     </div>
                     @empty
                     <div class="text-xs text-slate-400 py-4">No tracking events recorded.</div>
@@ -434,51 +490,105 @@
 <div id="add-event-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 class="text-base font-bold text-slate-900">Add Tracking Event</h3>
+            <div>
+                <h3 class="text-base font-bold text-slate-900">Append Maritime Tracking Event</h3>
+                <p class="text-xs text-slate-400">Immutable historical event log with automatic status progression</p>
+            </div>
             <button type="button" onclick="document.getElementById('add-event-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
         </div>
-        <form action="{{ route('shipments.tracking.store', $shipment->id) }}" method="POST" class="mt-4 space-y-4">
+
+        <!-- Quick Waypoint Presets -->
+        <div class="my-3 p-2.5 bg-[#FAF7F0] border border-[#E8D7B9] rounded-lg">
+            <span class="text-[11px] font-bold uppercase text-[#38251D] block mb-1">Quick Port / Maritime Waypoint:</span>
+            <div class="flex flex-wrap gap-1.5">
+                <button type="button" onclick="fillWaypoint('Belawan Port (IDBLW)', 3.7833, 98.6833)" class="text-[10px] bg-white border border-[#E8D7B9] hover:bg-amber-50 px-2 py-0.5 rounded font-semibold text-slate-700">Belawan (ID)</button>
+                <button type="button" onclick="fillWaypoint('Strait of Malacca Transit', 2.5000, 101.5000)" class="text-[10px] bg-white border border-[#E8D7B9] hover:bg-amber-50 px-2 py-0.5 rounded font-semibold text-slate-700">Malacca Strait</button>
+                <button type="button" onclick="fillWaypoint('Singapore Offshore Anchorage', 1.2902, 103.8519)" class="text-[10px] bg-white border border-[#E8D7B9] hover:bg-amber-50 px-2 py-0.5 rounded font-semibold text-slate-700">Singapore</button>
+                <button type="button" onclick="fillWaypoint('Suez Canal Maritime Corridor', 29.9744, 32.5598)" class="text-[10px] bg-white border border-[#E8D7B9] hover:bg-amber-50 px-2 py-0.5 rounded font-semibold text-slate-700">Suez Canal</button>
+                <button type="button" onclick="fillWaypoint('Port of Rotterdam (NLRTM)', 51.9540, 4.0530)" class="text-[10px] bg-white border border-[#E8D7B9] hover:bg-amber-50 px-2 py-0.5 rounded font-semibold text-slate-700">Rotterdam (NL)</button>
+                <button type="button" onclick="fillWaypoint('Port of Hamburg (DEHAM)', 53.5350, 9.9800)" class="text-[10px] bg-white border border-[#E8D7B9] hover:bg-amber-50 px-2 py-0.5 rounded font-semibold text-slate-700">Hamburg (DE)</button>
+            </div>
+        </div>
+
+        <form action="{{ route('shipments.tracking.store', $shipment->id) }}" method="POST" class="space-y-4">
             @csrf
             <div>
-                <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Event Type / Milestone *</label>
-                <select name="event_type" required class="w-full text-xs rounded border border-slate-300 px-3 py-2">
-                    <option value="CHECKPOINT_SCAN">CHECKPOINT_SCAN (Waypoint / En-route)</option>
-                    <option value="DEPARTED_PORT">DEPARTED_PORT</option>
-                    <option value="CUSTOMS_INSPECTION">CUSTOMS_INSPECTION</option>
-                    <option value="ARRIVED_TERMINAL">ARRIVED_TERMINAL</option>
-                    <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
-                    <option value="DELIVERED">DELIVERED (Final Release)</option>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Event Type / Milestone *</label>
+                <select name="event_type" id="event_type_select" required class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-amber-600" onchange="autoFillDescription(this.value)">
+                    <option value="BOOKED">BOOKED — Ocean Vessel Booking Confirmed</option>
+                    <option value="PICKED_UP">PICKED_UP — Container Gate-In at Depot / POL</option>
+                    <option value="DEPARTED">DEPARTED — Vessel Departed Port of Loading</option>
+                    <option value="IN_TRANSIT" selected>IN_TRANSIT — Ocean Voyage Transit Waypoint</option>
+                    <option value="ARRIVED_AT_PORT">ARRIVED_AT_PORT — Vessel Berthed at Port of Discharge</option>
+                    <option value="CUSTOMS_HOLD">CUSTOMS_HOLD — Phytosanitary / Quarantine Inspection</option>
+                    <option value="CUSTOMS_CLEARED">CUSTOMS_CLEARED — Import Customs & Release Granted</option>
+                    <option value="DELIVERED">DELIVERED — Cargo Consignee Release Completed</option>
+                    <option value="EXCEPTION">EXCEPTION — Operational Anomaly / Alert Logged</option>
+                    <option value="CANCELLED">CANCELLED — Booking Cancelled</option>
                 </select>
             </div>
+
             <div>
-                <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Location Name *</label>
-                <input type="text" name="location_name" required placeholder="e.g. Strait of Malacca Waypoint" class="w-full text-xs rounded border border-slate-300 px-3 py-2">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Waypoint / Location Name *</label>
+                <input type="text" name="location_name" id="wp_location_name" required placeholder="e.g. Strait of Malacca Waypoint" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 text-slate-900">
             </div>
+
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Latitude</label>
-                    <input type="number" step="0.0000001" name="latitude" placeholder="e.g. 1.290270" class="w-full text-xs rounded border border-slate-300 px-3 py-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Latitude</label>
+                    <input type="number" step="0.0000001" name="latitude" id="wp_latitude" placeholder="e.g. 1.290270" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 text-slate-900 font-mono">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Longitude</label>
-                    <input type="number" step="0.0000001" name="longitude" placeholder="e.g. 103.851959" class="w-full text-xs rounded border border-slate-300 px-3 py-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Longitude</label>
+                    <input type="number" step="0.0000001" name="longitude" id="wp_longitude" placeholder="e.g. 103.851959" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 text-slate-900 font-mono">
                 </div>
             </div>
+
             <div>
-                <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Event Timestamp *</label>
-                <input type="datetime-local" name="event_time" required value="{{ now()->format('Y-m-d\TH:i') }}" class="w-full text-xs rounded border border-slate-300 px-3 py-2">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Event Timestamp (UTC) *</label>
+                <input type="datetime-local" name="event_time" required value="{{ now()->format('Y-m-d\TH:i') }}" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 text-slate-900 font-mono">
+                <p class="text-[10px] text-slate-400 mt-1">Must be equal to or later than the most recent tracking event.</p>
             </div>
+
             <div>
-                <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Description / Notes *</label>
-                <textarea name="description" required rows="3" placeholder="Enter waypoint inspection or custody update details..." class="w-full text-xs rounded border border-slate-300 px-3 py-2"></textarea>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Description & Quality Inspection Notes *</label>
+                <textarea name="description" id="wp_description" required rows="3" placeholder="Enter waypoint inspection or custody update details..." class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 text-slate-900">Container in transit under optimal atmospheric conditions; relative humidity &lt; 65%.</textarea>
             </div>
+
             <div class="flex items-center justify-end space-x-2 pt-2">
-                <button type="button" onclick="document.getElementById('add-event-modal').classList.add('hidden')" class="px-3 py-1.5 text-xs border rounded text-slate-600">Cancel</button>
-                <button type="submit" class="px-4 py-1.5 text-xs font-semibold bg-sky-600 text-white rounded hover:bg-sky-500">Append Event</button>
+                <button type="button" onclick="document.getElementById('add-event-modal').classList.add('hidden')" class="px-3 py-1.5 text-xs border rounded-lg text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-4 py-1.5 text-xs font-bold bg-[#38251D] hover:bg-[#795548] text-white rounded-lg shadow-sm">Record Event</button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+    function fillWaypoint(name, lat, lon) {
+        document.getElementById('wp_location_name').value = name;
+        document.getElementById('wp_latitude').value = lat;
+        document.getElementById('wp_longitude').value = lon;
+    }
+
+    function autoFillDescription(type) {
+        const desc = document.getElementById('wp_description');
+        const map = {
+            'BOOKED': 'Ocean vessel carrier slot confirmed. Booking documentation issued.',
+            'PICKED_UP': 'Container sealed and received at terminal CFS. Gate-in inspection completed.',
+            'DEPARTED': 'Vessel departed berth. Underway on international sea route.',
+            'IN_TRANSIT': 'Vessel underway. Container temperature and humidity levels monitored.',
+            'ARRIVED_AT_PORT': 'Vessel safely berthed at discharge terminal. Gantry discharge scheduled.',
+            'CUSTOMS_HOLD': 'Phytosanitary inspection sampling hold by port agriculture agency.',
+            'CUSTOMS_CLEARED': 'Import customs duties processed and phytosanitary clearance granted.',
+            'DELIVERED': 'Container released to buyer consignee truck. Final seal intact and verified.',
+            'EXCEPTION': 'Operational delay or route anomaly recorded by vessel operator.',
+            'CANCELLED': 'Maritime shipment booking cancelled by mutual trade agreement.'
+        };
+        if (map[type]) {
+            desc.value = map[type];
+        }
+    }
+</script>
 
 <!-- Modal: Log Exception (Admin/Operator) -->
 <div id="log-exception-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">

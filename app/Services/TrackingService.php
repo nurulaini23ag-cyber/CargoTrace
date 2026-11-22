@@ -43,9 +43,36 @@ class TrackingService
             }
 
             // Status transition check if tracking event conveys a new shipment status
-            $targetStatus = $data['status'] ?? $shipment->current_status;
+            $targetStatus = $data['status'] ?? null;
+            if (!$targetStatus && isset($data['event_type'])) {
+                $targetStatus = match ($data['event_type']) {
+                    'BOOKED' => Shipment::STATUS_BOOKED,
+                    'PICKED_UP' => Shipment::STATUS_PICKED_UP,
+                    'DEPARTED', 'IN_TRANSIT', 'ARRIVED_AT_PORT', 'CUSTOMS_CLEARED' => ($shipment->current_status === Shipment::STATUS_PICKED_UP ? Shipment::STATUS_IN_TRANSIT : $shipment->current_status),
+                    'DELIVERED' => Shipment::STATUS_DELIVERED,
+                    'CANCELLED' => Shipment::STATUS_CANCELLED,
+                    default => $shipment->current_status,
+                };
+            } else {
+                $targetStatus = $targetStatus ?? $shipment->current_status;
+            }
+
             if ($targetStatus !== $shipment->current_status) {
-                $this->shipmentService->transitionStatus($shipment, $targetStatus, $data['description'] ?? null, $actor);
+                $this->shipmentService->transitionStatus(
+                    $shipment,
+                    $targetStatus,
+                    $data['description'] ?? null,
+                    $actor,
+                    createTrackingEvent: false
+                );
+            }
+
+            // Update shipment live coordinates if provided
+            if (!empty($data['latitude']) && !empty($data['longitude'])) {
+                $shipment->current_latitude = $data['latitude'];
+                $shipment->current_longitude = $data['longitude'];
+                $shipment->current_location_name = $data['location_name'] ?? $shipment->current_location_name;
+                $shipment->save();
             }
 
             $trackingEvent = TrackingEvent::create([

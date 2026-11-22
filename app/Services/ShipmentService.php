@@ -270,11 +270,16 @@ class ShipmentService
     /**
      * Transition shipment status explicitly.
      */
-    public function transitionStatus(Shipment $shipment, string $newStatus, ?string $reason = null, ?User $actor = null): Shipment
-    {
+    public function transitionStatus(
+        Shipment $shipment,
+        string $newStatus,
+        ?string $reason = null,
+        ?User $actor = null,
+        bool $createTrackingEvent = true
+    ): Shipment {
         $this->validateTransition($shipment->current_status, $newStatus);
 
-        return DB::transaction(function () use ($shipment, $newStatus, $reason, $actor) {
+        return DB::transaction(function () use ($shipment, $newStatus, $reason, $actor, $createTrackingEvent) {
             $oldStatus = $shipment->current_status;
             $shipment->current_status = $newStatus;
 
@@ -286,6 +291,29 @@ class ShipmentService
             }
 
             $shipment->save();
+
+            // Append tracking event if requested (e.g. from transition button or API)
+            if ($createTrackingEvent) {
+                $location = match ($newStatus) {
+                    Shipment::STATUS_DELIVERED => $shipment->destination,
+                    Shipment::STATUS_BOOKED, Shipment::STATUS_PICKED_UP => $shipment->origin,
+                    default => null,
+                };
+
+                TrackingEvent::create([
+                    'shipment_id' => $shipment->id,
+                    'event_type' => $newStatus,
+                    'status' => $newStatus,
+                    'event_time' => now(),
+                    'location_id' => $location?->id,
+                    'location_name' => $location ? $location->name : ($shipment->latestTrackingEvent?->location_name ?? 'Transit Waypoint'),
+                    'latitude' => $location?->latitude ?? $shipment->latestTrackingEvent?->latitude,
+                    'longitude' => $location?->longitude ?? $shipment->latestTrackingEvent?->longitude,
+                    'description' => $reason ?: "Shipment status updated to {$newStatus}.",
+                    'is_exception_event' => ($newStatus === Shipment::STATUS_CANCELLED),
+                    'created_by' => $actor ? $actor->id : $shipment->customer_id,
+                ]);
+            }
 
             // Notification to customer
             Notification::create([
