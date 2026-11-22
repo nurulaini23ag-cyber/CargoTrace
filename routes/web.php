@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\CarrierController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\ExceptionController;
 use App\Http\Controllers\Web\LocationController;
+use App\Http\Controllers\Web\MapController;
 use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\ShipmentController;
 use App\Http\Controllers\Web\SystemSettingController;
@@ -19,7 +20,11 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Guest Routes
+// Public Tracking Routes (No login required)
+Route::get('/track', [TrackingController::class, 'publicTrack'])->name('tracking.public');
+Route::get('/track/{number}', [TrackingController::class, 'trackNumber'])->name('tracking.search');
+
+// Guest Authentication Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
@@ -34,6 +39,10 @@ Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('home');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Global Live Cargo Fleet Map ("Peta Kargo & Posisi Barang")
+    Route::get('/map', [MapController::class, 'index'])->name('map.index');
+    Route::get('/api/map/shipments', [MapController::class, 'shipmentsData'])->name('map.data');
 
     // Shipments (All authenticated users can browse and view authorized shipments)
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');

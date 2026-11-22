@@ -235,6 +235,101 @@ class Shipment extends Model
         return $this->tracking_number ?? $this->shipment_number;
     }
 
+    public function getCommodityTypeAttribute(): string
+    {
+        $cargo = strtoupper($this->cargo_type ?? '');
+        if (str_contains($cargo, 'COCOA') || str_contains($cargo, 'KAKAO')) {
+            return 'COCOA';
+        }
+        return 'COFFEE';
+    }
+
+    /**
+     * Resolve the exact current geographic position of the cargo.
+     * Answers: "di mana barang itu sudah sampai"
+     */
+    public function getCurrentPosition(): array
+    {
+        // 1. If delivered, cargo is at destination port
+        if ($this->current_status === self::STATUS_DELIVERED || $this->current_status === self::WORKFLOW_DELIVERED) {
+            return [
+                'latitude' => (float) ($this->destination?->latitude ?? 0),
+                'longitude' => (float) ($this->destination?->longitude ?? 0),
+                'location_name' => $this->destination?->name ?? 'Destination Port',
+                'stage' => 'DELIVERED',
+                'is_arrived' => true,
+                'last_updated' => $this->actual_arrival?->format('Y-m-d H:i') ?? $this->updated_at->format('Y-m-d H:i'),
+                'progress_percent' => 100,
+                'event_description' => 'Cargo successfully discharged and received at destination port terminal.',
+            ];
+        }
+
+        // 2. If newly created or booked, cargo is at origin port waiting for departure
+        if (in_array($this->current_status, [self::STATUS_CREATED, self::STATUS_BOOKED, self::WORKFLOW_ORDER_CONFIRMED, self::WORKFLOW_PROCESSING, self::WORKFLOW_READY_FOR_SHIPMENT], true)) {
+            return [
+                'latitude' => (float) ($this->origin?->latitude ?? 0),
+                'longitude' => (float) ($this->origin?->longitude ?? 0),
+                'location_name' => $this->origin?->name ?? 'Origin Port',
+                'stage' => $this->current_status,
+                'is_arrived' => false,
+                'last_updated' => $this->expected_departure?->format('Y-m-d H:i') ?? $this->updated_at->format('Y-m-d H:i'),
+                'progress_percent' => 10,
+                'event_description' => 'Cargo staged at origin CFS warehouse awaiting vessel embarkation.',
+            ];
+        }
+
+        // 3. If in transit or picked up, check latest tracking event with valid coordinates
+        $latestEvent = $this->trackingEvents()
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->orderBy('event_time', 'desc')
+            ->first();
+
+        if ($latestEvent) {
+            $totalEvents = max(1, $this->trackingEvents()->count());
+            $pct = min(90, max(25, (int) round(($totalEvents / ($totalEvents + 1)) * 100)));
+
+            return [
+                'latitude' => (float) $latestEvent->latitude,
+                'longitude' => (float) $latestEvent->longitude,
+                'location_name' => $latestEvent->location_name ?? $this->current_location_name ?? 'In Transit Sea Corridor',
+                'stage' => $this->current_status,
+                'is_arrived' => false,
+                'last_updated' => $latestEvent->event_time?->format('Y-m-d H:i') ?? $this->updated_at->format('Y-m-d H:i'),
+                'progress_percent' => $pct,
+                'event_description' => $latestEvent->description ?? 'Vessel underway along maritime corridor.',
+            ];
+        }
+
+        // 4. Fallback to shipment table direct coordinates or midpoint
+        if ($this->current_latitude && $this->current_longitude) {
+            return [
+                'latitude' => (float) $this->current_latitude,
+                'longitude' => (float) $this->current_longitude,
+                'location_name' => $this->current_location_name ?? 'In Transit Sea Route',
+                'stage' => $this->current_status,
+                'is_arrived' => false,
+                'last_updated' => $this->updated_at->format('Y-m-d H:i'),
+                'progress_percent' => 50,
+                'event_description' => 'Container in transit along international shipping lane.',
+            ];
+        }
+
+        // 5. Midpoint interpolation between origin and destination
+        $lat = ($this->origin?->latitude ?? 0) * 0.5 + ($this->destination?->latitude ?? 0) * 0.5;
+        $lon = ($this->origin?->longitude ?? 0) * 0.5 + ($this->destination?->longitude ?? 0) * 0.5;
+        return [
+            'latitude' => round($lat, 4),
+            'longitude' => round($lon, 4),
+            'location_name' => 'High Seas International Transit',
+            'stage' => $this->current_status,
+            'is_arrived' => false,
+            'last_updated' => $this->updated_at->format('Y-m-d H:i'),
+            'progress_percent' => 50,
+            'event_description' => 'Vessel cruising international maritime corridor.',
+        ];
+    }
+
     public function getWorkflowProgressPercentage(): int
     {
         $steps = self::workflowSteps();

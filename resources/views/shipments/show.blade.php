@@ -194,24 +194,77 @@
                 @endif
             </div>
 
-            <!-- Interactive Leaflet.js Map (Slide 09) -->
+            <!-- Interactive Live Cargo Tracking Map & Current Position (Slide 09) -->
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                     <div>
-                        <h2 class="text-base font-bold text-slate-900">Geographic Tracking Map</h2>
-                        <p class="text-xs text-slate-500">Origin, checkpoints, active vessel/vehicle coordinates, and destination</p>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-bold text-slate-900">Geographic Maritime Tracking Map</h2>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span> Live Position Active
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500">Real-time sea freight route, waypoints, and current cargo position</p>
                     </div>
-                    <span class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                        Leaflet + OSM
+                    <span class="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded shadow-xs">
+                        Leaflet + OSM Marine
                     </span>
                 </div>
+
+                <!-- Prominent Current Position HUD Card ("Di Mana Barang Itu Sudah Sampai") -->
+                <div class="p-4 bg-gradient-to-r from-[#38251D] via-[#4E342E] to-[#38251D] text-white">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wider text-[#C49A55] font-bold flex items-center gap-1.5">
+                                <span>📍</span> Posisi Kargo Saat Ini &bull; Current Cargo Position
+                            </div>
+                            <div class="text-base font-extrabold text-white mt-0.5 flex items-center gap-2">
+                                <span>{{ $currentPos['location_name'] }}</span>
+                                @if($currentPos['is_arrived'])
+                                    <span class="px-2 py-0.5 bg-emerald-500 text-white text-[10px] rounded font-bold">ARRIVED</span>
+                                @else
+                                    <span class="px-2 py-0.5 bg-[#C49A55] text-slate-900 text-[10px] rounded font-bold">EN ROUTE</span>
+                                @endif
+                            </div>
+                            <div class="text-xs text-[#E8D7B9] mt-1 flex flex-wrap items-center gap-3">
+                                <span><strong>Koordinat:</strong> {{ number_format($currentPos['latitude'], 4) }}°, {{ number_format($currentPos['longitude'], 4) }}°</span>
+                                <span>&bull;</span>
+                                <span><strong>Pembaruan Terakhir:</strong> {{ $currentPos['last_updated'] }}</span>
+                                <span>&bull;</span>
+                                <span><strong>Vessel:</strong> {{ $shipment->vessel_name ?? $shipment->vessel_carrier ?? 'MSC Amsterdam' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar & Nautical Weather Pill -->
+                        <div class="bg-black/20 p-2.5 rounded-lg border border-white/10 min-w-[210px]">
+                            <div class="flex justify-between text-[11px] font-bold mb-1">
+                                <span class="text-[#E8D7B9]">Voyage Progress</span>
+                                <span class="text-white">{{ $currentPos['progress_percent'] }}%</span>
+                            </div>
+                            <div class="w-full bg-white/20 h-2 rounded-full overflow-hidden">
+                                <div class="bg-gradient-to-r from-[#C49A55] to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: {{ $currentPos['progress_percent'] }}%"></div>
+                            </div>
+                            <div class="mt-2 text-[10px] text-white/80 flex items-center justify-between">
+                                <span>{{ $shipment->origin->city }}</span>
+                                <span class="text-[#C49A55] font-mono">⚓</span>
+                                <span>{{ $shipment->destination->city }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaflet Map Canvas -->
                 <div id="shipment-map" class="h-96 w-full z-10"></div>
-                <div class="p-3 bg-slate-50 text-[11px] text-slate-500 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                        Green: Origin &bull; Red: Destination &bull; Blue: Historical Checkpoint &bull; Gold: Current Location
+
+                <div class="p-3 bg-slate-50 text-[11px] text-slate-600 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-3">
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Origin Port</span>
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> <strong>Current Position (Di mana barang sampai)</strong></span>
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span> Waypoint</span>
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Destination Port</span>
                     </div>
                     <div>
-                        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" class="underline">OpenStreetMap</a>
+                        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" class="underline text-slate-500">OpenStreetMap</a> contributors
                     </div>
                 </div>
             </div>
@@ -733,15 +786,65 @@
 
         routeCoords.push([destLat, destLon]);
 
-        // Draw connecting polyline
+        // Draw connecting maritime polyline
         const polyline = L.polyline(routeCoords, {
-            color: '#0284c7',
-            weight: 3,
-            opacity: 0.7,
-            dashArray: '6, 6'
+            color: '#38251D',
+            weight: 3.5,
+            opacity: 0.85
         }).addTo(map);
 
-        map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+        // Current Live Position of the cargo ("Di Mana Barang Itu Sudah Sampai")
+        const currentLat = {{ $currentPos['latitude'] }};
+        const currentLon = {{ $currentPos['longitude'] }};
+        const currentLocationName = {!! json_encode($currentPos['location_name']) !!};
+        const currentProgress = {{ $currentPos['progress_percent'] }};
+        const isArrived = {{ $currentPos['is_arrived'] ? 'true' : 'false' }};
+
+        // Create Custom Pulsing Golden Vessel Marker for Current Cargo Location
+        const vesselHtml = `
+            <div class="relative flex items-center justify-center cursor-pointer" style="width: 44px; height: 44px; margin-left: -22px; margin-top: -22px;">
+                <span class="animate-ping absolute inline-flex h-10 w-10 rounded-full bg-amber-400 opacity-75"></span>
+                <span class="absolute inline-flex h-7 w-7 rounded-full bg-amber-500 opacity-40"></span>
+                <div class="relative inline-flex rounded-full h-8 w-8 bg-[#38251D] border-2 border-[#C49A55] shadow-xl items-center justify-center text-white text-sm font-bold">
+                    🚢
+                </div>
+            </div>
+        `;
+
+        const vesselIcon = L.divIcon({
+            html: vesselHtml,
+            className: 'live-cargo-vessel-marker',
+            iconSize: [44, 44],
+            iconAnchor: [22, 22],
+            popupAnchor: [0, -22]
+        });
+
+        const vesselMarker = L.marker([currentLat, currentLon], { icon: vesselIcon, zIndexOffset: 1000 }).addTo(map);
+
+        const vesselPopupContent = `
+            <div class="p-1 font-sans text-xs min-w-[220px]">
+                <div class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-1">
+                    <span>📍</span> POSISI KARGO SAAT INI (LIVE)
+                </div>
+                <div class="text-sm font-extrabold text-slate-900 mb-1">${currentLocationName}</div>
+                <div class="space-y-1 text-slate-600 border-t border-slate-100 pt-1">
+                    <div><strong>Status:</strong> <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900">{{ $shipment->current_status }}</span></div>
+                    <div><strong>Vessel:</strong> {{ $shipment->vessel_name ?? $shipment->vessel_carrier ?? 'MSC Amsterdam' }}</div>
+                    <div><strong>Voyage:</strong> {{ $shipment->voyage_number ?? 'VOY-2026' }}</div>
+                    <div><strong>Progress:</strong> ${currentProgress}% of voyage completed</div>
+                    <div><strong>Coordinates:</strong> ${currentLat.toFixed(4)}°, ${currentLon.toFixed(4)}°</div>
+                    <div class="text-[10px] text-slate-500 mt-1">🕒 Last Reported: {{ $currentPos['last_updated'] }}</div>
+                </div>
+            </div>
+        `;
+        vesselMarker.bindPopup(vesselPopupContent);
+        // Automatically open the vessel popup so user sees immediately where the cargo is!
+        vesselMarker.openPopup();
+
+        // Fit map bounds to show route and current vessel location
+        const allBounds = L.latLngBounds(routeCoords);
+        allBounds.extend([currentLat, currentLon]);
+        map.fitBounds(allBounds, { padding: [50, 50] });
     });
 </script>
 @endsection

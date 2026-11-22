@@ -61,6 +61,42 @@
         </div>
     </div>
 
+    <!-- Global Live Cargo Fleet Map CTA & Maritime Radar Banner -->
+    <div class="bg-gradient-to-r from-[#38251D] via-[#4E342E] to-[#292421] rounded-2xl p-5 text-white shadow-md border border-[#C49A55]/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-[#C49A55] text-slate-900 flex items-center justify-center text-2xl font-bold shadow-inner shrink-0">
+                🚢
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400/20 text-[#E8D7B9] border border-[#C49A55]/40">
+                        AIS LIVE FLEET RADAR
+                    </span>
+                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        Real-Time Positioning
+                    </span>
+                </div>
+                <h2 class="text-lg font-extrabold text-white mt-1">
+                    Peta Kargo Global & Posisi Barang Saat Ini
+                </h2>
+                <p class="text-xs text-[#E8D7B9] mt-0.5">
+                    Lacak posisi koordinat kapal, checkpoint selat internasional (Malaka, Suez, Bab-el-Mandeb), dan cuaca pelabuhan secara interaktif.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
+            <a href="{{ route('tracking.public') }}" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-[#E8D7B9] border border-white/20 text-xs font-bold transition flex items-center gap-1.5">
+                <span>🔍</span> Lacak Publik
+            </a>
+            <a href="{{ route('map.index') }}" class="px-5 py-2.5 rounded-xl bg-[#C49A55] hover:bg-[#b38944] text-slate-900 text-xs font-black transition shadow-sm flex items-center gap-2">
+                <span>Buka Peta Kargo</span>
+                <span>&rarr;</span>
+            </a>
+        </div>
+    </div>
+
     <!-- Charts Section (Chart.js) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Status Distribution Chart -->

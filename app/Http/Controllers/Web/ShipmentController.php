@@ -170,14 +170,13 @@ class ShipmentController extends Controller
             abort(403, 'Unauthorized access: You can only view your own shipments.');
         }
 
-        // Fetch live weather context for current position / destination
-        $targetLat = $shipment->latestTrackingEvent?->latitude ?? $shipment->destination->latitude;
-        $targetLon = $shipment->latestTrackingEvent?->longitude ?? $shipment->destination->longitude;
-        $weather = $this->externalApiService->getWeather($targetLat, $targetLon);
+        // Fetch live position ("di mana barang itu sudah sampai") and weather context
+        $currentPos = $shipment->getCurrentPosition();
+        $weather = $this->externalApiService->getWeather($currentPos['latitude'], $currentPos['longitude']);
 
         $locations = Location::all();
 
-        return view('shipments.show', compact('shipment', 'weather', 'locations'));
+        return view('shipments.show', compact('shipment', 'weather', 'locations', 'currentPos'));
     }
 
     /**

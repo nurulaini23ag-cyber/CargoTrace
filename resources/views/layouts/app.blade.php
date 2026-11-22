@@ -65,8 +65,14 @@
                     <a href="{{ route('dashboard') }}" class="px-3 py-2 rounded-md transition {{ request()->routeIs('dashboard') ? 'bg-slate-800 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                         Dashboard
                     </a>
+                    <a href="{{ route('map.index') }}" class="px-3 py-2 rounded-md transition flex items-center gap-1.5 {{ request()->routeIs('map.*') ? 'bg-[#C49A55] text-slate-900 font-bold' : 'text-[#E8D7B9] hover:bg-slate-800 hover:text-white' }}">
+                        <span>🌍</span> Peta Kargo
+                    </a>
                     <a href="{{ route('shipments.index') }}" class="px-3 py-2 rounded-md transition {{ request()->routeIs('shipments.*') ? 'bg-slate-800 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                         Shipments
+                    </a>
+                    <a href="{{ route('tracking.public') }}" class="px-3 py-2 rounded-md transition {{ request()->routeIs('tracking.*') ? 'bg-slate-800 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                        Lacak Publik
                     </a>
 
                     @if(Auth::user()->isAdmin())
