@@ -468,10 +468,23 @@
                 const borderColor = isCoffee ? 'border-[#C49A55]' : 'border-amber-300';
 
                 const sailingHtml = `
-                    <div class="relative flex items-center justify-center cursor-pointer" style="width: 44px; height: 44px; margin-left: -22px; margin-top: -22px;">
-                        <span class="animate-ping absolute inline-flex h-10 w-10 rounded-full ${pulseBg} opacity-60"></span>
-                        <div class="relative inline-flex rounded-full h-8 w-8 ${iconBg} border-2 ${borderColor} shadow-2xl items-center justify-center text-white text-xs font-bold transition-transform duration-75 fleet-ship-icon-${s.id}">
-                            ${vesselEmoji}
+                    <div class="relative flex flex-col items-center cursor-pointer pointer-events-auto" style="width: 80px; margin-left: -40px; margin-top: -30px;">
+                        <!-- Mini Callout Badge -->
+                        <div class="bg-white/95 text-slate-900 font-extrabold text-[9px] px-1.5 py-0.5 rounded shadow border border-slate-200 whitespace-nowrap mb-0.5 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full ${isCoffee ? 'bg-amber-500' : 'bg-orange-500'} animate-pulse"></span>
+                            <span>${s.number}</span>
+                        </div>
+                        <!-- Container Ship SVG Hull -->
+                        <div class="relative w-10 h-5 flex items-center justify-center transform transition-transform duration-75 fleet-ship-icon-${s.id}">
+                            <svg width="38" height="18" viewBox="0 0 60 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 16L10 25H48L56 16H4Z" fill="${isCoffee ? '#38251D' : '#795548'}" stroke="#0f172a" stroke-width="1.2"/>
+                                <path d="M4 16L12 11H50L56 16H4Z" fill="#334155"/>
+                                <rect x="40" y="4" width="9" height="8" rx="1" fill="#f8fafc" stroke="#cbd5e1" stroke-width="0.8"/>
+                                <rect x="42" y="6" width="5" height="2.5" rx="0.5" fill="#38bdf8"/>
+                                <rect x="12" y="7" width="8" height="5" rx="0.5" fill="#C49A55"/>
+                                <rect x="21" y="7" width="8" height="5" rx="0.5" fill="${isCoffee ? '#78350f' : '#ea580c'}"/>
+                                <rect x="30" y="7" width="8" height="5" rx="0.5" fill="#0284c7"/>
+                            </svg>
                         </div>
                     </div>
                 `;
@@ -480,9 +493,9 @@
                     icon: L.divIcon({
                         html: sailingHtml,
                         className: 'fleet-sailing-marker',
-                        iconSize: [44, 44],
-                        iconAnchor: [22, 22],
-                        popupAnchor: [0, -22]
+                        iconSize: [80, 40],
+                        iconAnchor: [40, 30],
+                        popupAnchor: [0, -30]
                     }),
                     zIndexOffset: 1000
                 }).addTo(map);

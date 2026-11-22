@@ -1006,22 +1006,42 @@
             opacity: 0.95
         }).addTo(map);
 
-        // 7. Custom Moving Vessel Marker (Shopee-Style Animated Cargo Ship with Water Ripples)
+        // 7. Custom Moving Vessel Marker (Shopee-Style Animated Cargo Ship with White Speech Bubble & Red Pin)
         const movingVesselHtml = `
-            <div class="shopee-sailing-ship-container relative flex items-center justify-center cursor-pointer" style="width: 52px; height: 52px; margin-left: -26px; margin-top: -26px;">
-                <!-- Expanding water wake ripple effects -->
-                <div class="ship-wake-pulse absolute w-12 h-12 rounded-full bg-cyan-400/40 animate-ping"></div>
-                <div class="ship-wake-glow absolute w-9 h-9 rounded-full bg-amber-400/30 animate-pulse"></div>
-
-                <!-- Directional Container Ship Body (Rotates to heading) -->
-                <div class="vessel-rotating-body relative w-10 h-10 bg-gradient-to-br from-[#38251D] via-[#4E342E] to-[#292421] border-2 border-[#C49A55] rounded-full shadow-2xl flex items-center justify-center text-white text-base font-bold transition-transform duration-75" id="sailing-ship-icon">
-                    🚢
+            <div class="shopee-ship-marker-wrapper relative flex flex-col items-center pointer-events-auto" style="width: 140px; margin-left: -70px; margin-top: -65px;">
+                <!-- White Speech Bubble Callout (Shopee 'Memproses pesanan' / 'Kapal Sedang Berlayar') -->
+                <div class="relative bg-white text-slate-900 font-extrabold text-[11px] px-3 py-1 rounded-md shadow-xl border border-slate-200 whitespace-nowrap flex items-center justify-center">
+                    <span id="ship-badge-text">Memproses pesanan</span>
+                    <!-- Downward pointing triangle -->
+                    <div class="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-6 border-l-transparent border-r-transparent border-t-white"></div>
                 </div>
 
-                <!-- Floating Shopee-style live badge -->
-                <div class="absolute -top-7 whitespace-nowrap bg-slate-900/95 text-[#E8D7B9] text-[9px] font-black px-2 py-0.5 rounded-full border border-[#C49A55]/50 shadow-lg flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span id="ship-badge-text">Berlayar 19.4 Knots</span>
+                <!-- Red Location Pin Pinpoint -->
+                <div class="w-3.5 h-3.5 rounded-full bg-rose-600 border border-white shadow-md flex items-center justify-center my-0.5">
+                    <div class="w-1 h-1 rounded-full bg-white"></div>
+                </div>
+
+                <!-- Realistic Maritime Container Ship (Replaces Delivery Truck) -->
+                <div class="relative w-16 h-8 flex items-center justify-center transform transition-transform duration-75" id="sailing-ship-icon">
+                    <!-- Bow waves / Sea wake glow -->
+                    <div class="absolute -left-2 w-5 h-5 rounded-full bg-cyan-400/40 animate-ping"></div>
+
+                    <!-- 3D Isometric Container Ship SVG -->
+                    <svg width="60" height="28" viewBox="0 0 60 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Hull (Navy Marine) -->
+                        <path d="M4 16L10 25H48L56 16H4Z" fill="#1e293b" stroke="#0f172a" stroke-width="1.2"/>
+                        <path d="M4 16L12 11H50L56 16H4Z" fill="#334155"/>
+                        <!-- Bridge / Deck House -->
+                        <rect x="40" y="4" width="9" height="8" rx="1" fill="#f8fafc" stroke="#cbd5e1" stroke-width="0.8"/>
+                        <rect x="42" y="6" width="5" height="2.5" rx="0.5" fill="#38bdf8"/>
+                        <rect x="44" y="2" width="1.5" height="2.5" fill="#ef4444"/>
+                        <!-- Stacked Coffee & Cocoa Containers -->
+                        <rect x="12" y="7" width="8" height="5" rx="0.5" fill="#C49A55" stroke="#78350f" stroke-width="0.5"/>
+                        <rect x="21" y="7" width="8" height="5" rx="0.5" fill="#795548" stroke="#3e2723" stroke-width="0.5"/>
+                        <rect x="30" y="7" width="8" height="5" rx="0.5" fill="#0284c7" stroke="#0369a1" stroke-width="0.5"/>
+                        <rect x="16" y="3" width="7" height="4" rx="0.5" fill="#ea580c" stroke="#9a3412" stroke-width="0.5"/>
+                        <rect x="24" y="3" width="7" height="4" rx="0.5" fill="#10b981" stroke="#047857" stroke-width="0.5"/>
+                    </svg>
                 </div>
             </div>
         `;
@@ -1029,9 +1049,9 @@
         const movingVesselIcon = L.divIcon({
             html: movingVesselHtml,
             className: 'shopee-moving-vessel-marker',
-            iconSize: [52, 52],
-            iconAnchor: [26, 26],
-            popupAnchor: [0, -26]
+            iconSize: [140, 75],
+            iconAnchor: [70, 65],
+            popupAnchor: [0, -65]
         });
 
         const startPt = densePoints[0] || { lat: originLat, lng: originLon };
@@ -1088,7 +1108,7 @@
                 }
                 const progressPct = Math.round((curStepIndex / (densePoints.length - 1)) * 100);
                 if (shipBadgeText) {
-                    shipBadgeText.innerText = `Berlayar (${progressPct}%)`;
+                    shipBadgeText.innerText = progressPct >= 98 ? 'Pesanan Tiba' : (progressPct <= 2 ? 'Memproses pesanan' : `Kapal Berlayar (${progressPct}%)`);
                 }
             }
         }
