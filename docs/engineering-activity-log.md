@@ -399,3 +399,4 @@
 - [2026-11-22 09:30:00 +0700] feat(dashboard): optimize fleet status summary metric counter performance
 - [2026-11-22 11:00:00 +0700] docs(deployment): update local artisan serve background launch documentation
 - [2026-11-22 12:15:00 +0700] test(feature): verify shipment creation redirects to tracking timeline view
+- [2026-11-22 13:45:00 +0700] refactor(auth): simplify demo credentials auto-fill button behavior on login screen
