@@ -288,4 +288,79 @@ class InteractiveMapAndWeatherTest extends TestCase
         $response->assertSee('Malacca Strait - Northbound Transit Lane');
         $response->assertSee('Geographic Maritime Tracking Map');
     }
+
+    public function test_map_displays_google_maps_clean_style_with_leaflet_and_openstreetmap(): void
+    {
+        $this->actingAs($this->admin);
+
+        $response = $this->get('/map');
+        $response->assertStatus(200);
+        $response->assertSee('LEAFLET + OPENSTREETMAP');
+        $response->assertSee('Google / OSM Standard');
+        $response->assertSee('Semua Kapal');
+        $response->assertSee('Lagi Transit');
+        $response->assertSee('Di Barat (Eropa)');
+        $response->assertSee('Sudah Sampai');
+        $response->assertSee('Sinyal Mati (LKP)');
+    }
+
+    public function test_shipment_offline_signal_tracks_real_time_last_known_position(): void
+    {
+        $shipment = Shipment::create([
+            'shipment_number' => 'CTC-SIGNAL-OFF-01',
+            'customer_id' => $this->customer1->id,
+            'carrier_id' => $this->carrier->id,
+            'origin_id' => $this->origin->id,
+            'destination_id' => $this->destination->id,
+            'cargo_type' => 'Specialty Green Coffee',
+            'weight' => 21000,
+            'volume' => 38,
+            'current_status' => Shipment::STATUS_IN_TRANSIT,
+            'special_instructions' => 'OFFLINE_BLINDSPOT_INDIAN_OCEAN',
+            'expected_departure' => now()->subDays(5),
+            'expected_arrival' => now()->addDays(15),
+            'estimated_arrival' => now()->addDays(15),
+        ]);
+
+        TrackingEvent::create([
+            'shipment_id' => $shipment->id,
+            'status' => Shipment::STATUS_IN_TRANSIT,
+            'event_type' => 'WAYPOINT_PASSED',
+            'location_name' => 'Mid-Indian Ocean Deep Trench',
+            'latitude' => -5.4321,
+            'longitude' => 78.1234,
+            'event_time' => now()->subHours(8),
+            'description' => 'Last transmission before entering satellite blindspot.',
+            'created_by' => $this->operator->id,
+        ]);
+
+        $pos = $shipment->getCurrentPosition();
+        $this->assertTrue($pos['is_signal_offline']);
+        $this->assertEquals('OFFLINE', $pos['signal_status']);
+        $this->assertStringContainsString('Last Known Position', $pos['signal_label']);
+        $this->assertEquals(-5.4321, $pos['latitude']);
+        $this->assertEquals(78.1234, $pos['longitude']);
+
+        $this->actingAs($this->admin);
+        $response = $this->get('/map?q=CTC-SIGNAL-OFF-01');
+        $response->assertStatus(200);
+        $response->assertSee('CTC-SIGNAL-OFF-01');
+        $response->assertSee('Mid-Indian Ocean Deep Trench');
+        $response->assertSee('Last Known Position');
+    }
+
+    public function test_map_filters_by_sector_west_and_delivery_status(): void
+    {
+        $this->actingAs($this->admin);
+
+        // Filter by DELIVERED
+        $delivResponse = $this->get('/map?status=DELIVERED');
+        $delivResponse->assertStatus(200);
+        $delivResponse->assertSee('Peta Kargo Global');
+
+        // Filter by Sector BARAT
+        $westResponse = $this->get('/map?sector=BARAT');
+        $westResponse->assertStatus(200);
+        $westResponse->assertSee('Peta Kargo Global');
+    }
 }

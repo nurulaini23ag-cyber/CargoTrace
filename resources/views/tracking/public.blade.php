@@ -101,11 +101,12 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <span class="text-[10px] text-slate-400 font-bold hidden sm:inline">Peta Dunia:</span>
+                    <span class="text-[10px] text-slate-400 font-bold hidden sm:inline">Peta Dunia (Leaflet + OSM):</span>
                     <select id="shopee-map-style" onchange="changeShopeeTheme(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1 text-[11px] font-semibold focus:outline-none focus:ring-1 focus:ring-orange-500 cursor-pointer">
-                        <option value="dark" selected>🌙 Dark Maritime (Shopee Style)</option>
-                        <option value="voyager">🗺️ Peta Dunia Voyager</option>
-                        <option value="osm">🧭 OpenStreetMap</option>
+                        <option value="osm" selected>🗺️ Google / OpenStreetMap Standard (PPT Slide 09)</option>
+                        <option value="satellite">🛰️ Citra Satelit Laut</option>
+                        <option value="voyager">🌊 Peta Maritim Pelayaran</option>
+                        <option value="dark">🌙 Dark Maritime Chart</option>
                     </select>
                 </div>
             </div>
@@ -384,25 +385,29 @@
         // Add sleek zoom control on top-right
         L.control.zoom({ position: 'topright' }).addTo(shopeeMap);
 
-        // Tile Providers (Dark Matter as DEFAULT to match Shopee Dark Navy Maps!)
+        // Tile Providers (Standard OpenStreetMap as DEFAULT per PPT Slide 09!)
         shopeeTiles = {
-            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                subdomains: 'abcd',
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 18,
+                attribution: '&copy; Esri &mdash; World Imagery'
             }),
             voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19,
                 subdomains: 'abcd',
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             }),
-            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '&copy; OpenStreetMap'
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             })
         };
 
-        shopeeCurrentTile = shopeeTiles.dark;
+        shopeeCurrentTile = shopeeTiles.osm;
         shopeeCurrentTile.addTo(shopeeMap);
 
         // 1. Origin Pin (Red Pin with white center just like Jakarta pin in Shopee screenshot!)

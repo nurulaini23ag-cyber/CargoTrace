@@ -233,6 +233,16 @@
                                 <span>&bull;</span>
                                 <span><strong>Vessel:</strong> {{ $shipment->vessel_name ?? $shipment->vessel_carrier ?? 'MSC Amsterdam' }}</span>
                             </div>
+                            <div class="mt-2 flex flex-wrap items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $currentPos['is_signal_offline'] ? 'bg-amber-400 text-slate-900' : 'bg-emerald-500/30 text-emerald-300 border border-emerald-400/30' }}">
+                                    {{ $currentPos['signal_label'] }}
+                                </span>
+                                @if($currentPos['is_signal_offline'])
+                                    <span class="text-[10px] text-amber-200">
+                                        (Menampilkan Last Known Position secara real-time)
+                                    </span>
+                                @endif
+                            </div>
                         </div>
 
                         <!-- Progress Bar & Nautical Weather Pill -->
@@ -867,6 +877,14 @@
 
         // World Map Basemap Tile Providers
         tileProviders = {
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 18,
+                attribution: '&copy; Esri &mdash; World Imagery'
+            }),
             voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19,
                 subdomains: 'abcd',
@@ -876,15 +894,11 @@
                 maxZoom: 19,
                 subdomains: 'abcd',
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            }),
-            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             })
         };
 
-        // Default to Voyager World Map
-        currentTileLayer = tileProviders.voyager;
+        // Default to OpenStreetMap Standard per PPT Slide 09
+        currentTileLayer = tileProviders.osm;
         currentTileLayer.addTo(map);
 
         // 1. Origin Marker (Emerald Port Anchor)

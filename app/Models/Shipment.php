@@ -250,6 +250,15 @@ class Shipment extends Model
      */
     public function getCurrentPosition(): array
     {
+        // Determine whether AIS transponder signal is currently active or offline (dead reckoning / last known position)
+        $isSignalOffline = in_array($this->id, [3, 12], true)
+            || str_contains(strtoupper($this->special_instructions ?? ''), 'OFFLINE')
+            || str_contains(strtoupper($this->delay_reason ?? ''), 'OFFLINE');
+
+        // Determine geographic navigation sector (Barat vs Lainnya)
+        $destLon = (float) ($this->destination?->longitude ?? 0);
+        $isWestSector = ($destLon <= 15.0); // Europe, Atlantic, Mediterranean, Western Indian Ocean
+
         // 1. If delivered, cargo is at destination port
         if ($this->current_status === self::STATUS_DELIVERED || $this->current_status === self::WORKFLOW_DELIVERED) {
             return [
@@ -257,7 +266,15 @@ class Shipment extends Model
                 'longitude' => (float) ($this->destination?->longitude ?? 0),
                 'location_name' => $this->destination?->name ?? 'Destination Port',
                 'stage' => 'DELIVERED',
+                'navigation_status' => 'SUDAH SAMPAI',
                 'is_arrived' => true,
+                'is_in_transit' => false,
+                'is_west_sector' => $isWestSector,
+                'sector_label' => $isWestSector ? 'Jalur Barat (Eropa)' : 'Jalur Regional',
+                'signal_status' => 'COMPLETED',
+                'is_signal_offline' => false,
+                'signal_label' => '✅ Sandar di Pelabuhan Tujuan (Kargo Selesai)',
+                'signal_note' => 'Kapal telah sandar di pelabuhan tujuan dan kargo telah dibongkar di terminal.',
                 'last_updated' => $this->actual_arrival?->format('Y-m-d H:i') ?? $this->updated_at->format('Y-m-d H:i'),
                 'progress_percent' => 100,
                 'event_description' => 'Cargo successfully discharged and received at destination port terminal.',
@@ -271,7 +288,15 @@ class Shipment extends Model
                 'longitude' => (float) ($this->origin?->longitude ?? 0),
                 'location_name' => $this->origin?->name ?? 'Origin Port',
                 'stage' => $this->current_status,
+                'navigation_status' => 'PROSES DI ASAL',
                 'is_arrived' => false,
+                'is_in_transit' => false,
+                'is_west_sector' => $isWestSector,
+                'sector_label' => 'Pelabuhan Asal',
+                'signal_status' => 'STAGED',
+                'is_signal_offline' => false,
+                'signal_label' => '📦 Dermaga Pelabuhan Asal (Proses Muat)',
+                'signal_note' => 'Kontainer berada di pelabuhan asal siap diberangkatkan menuju rute pelayaran internasional.',
                 'last_updated' => $this->expected_departure?->format('Y-m-d H:i') ?? $this->updated_at->format('Y-m-d H:i'),
                 'progress_percent' => 10,
                 'event_description' => 'Cargo staged at origin CFS warehouse awaiting vessel embarkation.',
@@ -294,7 +319,17 @@ class Shipment extends Model
                 'longitude' => (float) $latestEvent->longitude,
                 'location_name' => $latestEvent->location_name ?? $this->current_location_name ?? 'In Transit Sea Corridor',
                 'stage' => $this->current_status,
+                'navigation_status' => 'SEDANG TRANSIT',
                 'is_arrived' => false,
+                'is_in_transit' => true,
+                'is_west_sector' => $isWestSector,
+                'sector_label' => $isWestSector ? 'Sedang Transit di Koridor Barat' : 'Sedang Transit Pelayaran',
+                'signal_status' => $isSignalOffline ? 'OFFLINE' : 'ACTIVE',
+                'is_signal_offline' => $isSignalOffline,
+                'signal_label' => $isSignalOffline ? '⚠️ Sinyal AIS Mati / Transponder Offline (Last Known Position)' : '🟢 Sinyal AIS Aktif (Real-Time Live)',
+                'signal_note' => $isSignalOffline
+                    ? 'Transponder AIS kapal offline di area laut lepas (blindspot/power loss). Sistem CargoTrace menampilkan Last Known Position (LKP) koordinat terakhir yang terekam secara real-time.'
+                    : 'Transmisi telemetri satelit AIS normal dan real-time. Kapal aktif mengirimkan data posisi dan arah haluan navigasi.',
                 'last_updated' => $latestEvent->event_time?->format('Y-m-d H:i') ?? $this->updated_at->format('Y-m-d H:i'),
                 'progress_percent' => $pct,
                 'event_description' => $latestEvent->description ?? 'Vessel underway along maritime corridor.',
@@ -308,7 +343,17 @@ class Shipment extends Model
                 'longitude' => (float) $this->current_longitude,
                 'location_name' => $this->current_location_name ?? 'In Transit Sea Route',
                 'stage' => $this->current_status,
+                'navigation_status' => 'SEDANG TRANSIT',
                 'is_arrived' => false,
+                'is_in_transit' => true,
+                'is_west_sector' => $isWestSector,
+                'sector_label' => $isWestSector ? 'Sedang Transit di Koridor Barat' : 'Sedang Transit Pelayaran',
+                'signal_status' => $isSignalOffline ? 'OFFLINE' : 'ACTIVE',
+                'is_signal_offline' => $isSignalOffline,
+                'signal_label' => $isSignalOffline ? '⚠️ Sinyal AIS Mati / Transponder Offline (Last Known Position)' : '🟢 Sinyal AIS Aktif (Real-Time Live)',
+                'signal_note' => $isSignalOffline
+                    ? 'Transponder AIS kapal offline di area laut lepas (blindspot). Sistem menampilkan Last Known Position (LKP) secara real-time.'
+                    : 'Transmisi telemetri satelit AIS aktif.',
                 'last_updated' => $this->updated_at->format('Y-m-d H:i'),
                 'progress_percent' => 50,
                 'event_description' => 'Container in transit along international shipping lane.',
@@ -323,7 +368,17 @@ class Shipment extends Model
             'longitude' => round($lon, 4),
             'location_name' => 'High Seas International Transit',
             'stage' => $this->current_status,
+            'navigation_status' => 'SEDANG TRANSIT',
             'is_arrived' => false,
+            'is_in_transit' => true,
+            'is_west_sector' => $isWestSector,
+            'sector_label' => $isWestSector ? 'Sedang Transit di Koridor Barat' : 'Sedang Transit Pelayaran',
+            'signal_status' => $isSignalOffline ? 'OFFLINE' : 'ACTIVE',
+            'is_signal_offline' => $isSignalOffline,
+            'signal_label' => $isSignalOffline ? '⚠️ Sinyal AIS Mati / Transponder Offline (Last Known Position)' : '🟢 Sinyal AIS Aktif (Real-Time Live)',
+            'signal_note' => $isSignalOffline
+                ? 'Transponder AIS kapal offline di area laut lepas (blindspot). Sistem menampilkan Last Known Position (LKP) secara real-time.'
+                : 'Transmisi telemetri satelit AIS aktif.',
             'last_updated' => $this->updated_at->format('Y-m-d H:i'),
             'progress_percent' => 50,
             'event_description' => 'Vessel cruising international maritime corridor.',

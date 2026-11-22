@@ -53,25 +53,70 @@ class MapController extends Controller
             $query->where('current_status', $request->status);
         }
 
+        if ($request->filled('q')) {
+            $kw = '%' . trim($request->q) . '%';
+            $query->where(function ($sub) use ($kw) {
+                $sub->where('shipment_number', 'like', $kw)
+                    ->orWhere('tracking_number', 'like', $kw)
+                    ->orWhere('vessel_carrier', 'like', $kw)
+                    ->orWhere('cargo_type', 'like', $kw)
+                    ->orWhereHas('customer', function ($cq) use ($kw) {
+                        $cq->where('name', 'like', $kw)->orWhere('company_name', 'like', $kw);
+                    })
+                    ->orWhereHas('origin', function ($oq) use ($kw) {
+                        $oq->where('name', 'like', $kw)->orWhere('city', 'like', $kw);
+                    })
+                    ->orWhereHas('destination', function ($dq) use ($kw) {
+                        $dq->where('name', 'like', $kw)->orWhere('city', 'like', $kw);
+                    });
+            });
+        }
+
         $shipments = $query->latest()->get();
 
         // Map shipments to enriched geographic objects with exact live positions
-        $mapShipments = $shipments->map(function (Shipment $s) {
+        $mapShipments = $shipments->map(function (Shipment $s) use ($user) {
             $currentPos = $s->getCurrentPosition();
             $comm = $s->commodity_type;
+
+            $itemsSummary = $s->items->count() > 0
+                ? $s->items->map(fn($item) => ($item->item_name ?? $item->commodity_category) . ' (' . number_format($item->net_weight, 0) . ' kg)')->join(', ')
+                : ($s->cargo_type . ' (' . number_format($s->weight, 0) . ' kg)');
 
             return [
                 'id' => $s->id,
                 'number' => $s->shipment_number,
+                'tracking_number' => $s->getActiveTrackingNumber(),
                 'cargo_type' => $s->cargo_type,
                 'commodity' => $comm,
+                'weight' => (float) $s->weight,
+                'weight_formatted' => number_format($s->weight, 0) . ' kg',
+                'volume_formatted' => number_format($s->volume, 1) . ' m³',
+                'items_summary' => $itemsSummary,
                 'status' => $s->current_status,
+                'navigation_status' => $currentPos['navigation_status'] ?? ($s->current_status === 'DELIVERED' ? 'SUDAH SAMPAI' : ($s->current_status === 'IN_TRANSIT' ? 'SEDANG TRANSIT' : 'PROSES DI ASAL')),
+                'is_west_sector' => (bool) ($currentPos['is_west_sector'] ?? false),
+                'sector_label' => $currentPos['sector_label'] ?? 'Koridor Maritim',
+                'signal_status' => $currentPos['signal_status'] ?? 'ACTIVE',
+                'is_signal_offline' => (bool) ($currentPos['is_signal_offline'] ?? false),
+                'signal_label' => $currentPos['signal_label'] ?? '🟢 Sinyal AIS Aktif',
+                'signal_note' => $currentPos['signal_note'] ?? 'Transmisi satelit AIS normal dan real-time.',
+                'customer' => [
+                    'id' => $s->customer?->id,
+                    'name' => $s->customer?->name ?? 'Customer Consignee',
+                    'company' => $s->customer?->company_name ?? 'International Buyer',
+                ],
+                'is_my_cargo' => $user ? ($s->customer_id === $user->id || $user->isAdmin() || $user->isOperator()) : true,
                 'is_delayed' => (bool) $s->is_delayed,
                 'delay_hours' => (float) $s->delay_hours,
                 'carrier' => $s->carrier?->name ?? 'Maritime Express',
+                'carrier_code' => $s->carrier?->code ?? 'OCN',
                 'vessel_name' => $s->vessel_name ?? $s->vessel_carrier ?? 'MV Cargo Liner',
                 'voyage_number' => $s->voyage_number ?? 'VOY-2026',
                 'container_number' => $s->container_number ?? 'CTRU-882910',
+                'expected_departure' => $s->expected_departure?->format('d M Y H:i'),
+                'expected_arrival' => $s->expected_arrival?->format('d M Y'),
+                'estimated_arrival' => $s->estimated_arrival?->format('d M Y'),
                 'origin' => [
                     'name' => $s->origin?->name ?? 'Origin Port',
                     'city' => $s->origin?->city ?? 'Origin',
@@ -101,14 +146,32 @@ class MapController extends Controller
             ];
         });
 
+        // Apply post-collection filters if sector or signal filter requested
+        if ($request->filled('sector') && $request->sector === 'BARAT') {
+            $mapShipments = $mapShipments->filter(fn($m) => $m['is_west_sector'])->values();
+        }
+
+        if ($request->filled('signal')) {
+            if ($request->signal === 'OFFLINE') {
+                $mapShipments = $mapShipments->filter(fn($m) => $m['is_signal_offline'])->values();
+            } elseif ($request->signal === 'ACTIVE') {
+                $mapShipments = $mapShipments->filter(fn($m) => !$m['is_signal_offline'] && $m['status'] !== 'DELIVERED')->values();
+            }
+        }
+
         $carriers = Carrier::where('is_active', true)->get();
 
+        $allCollection = $shipments->map(fn($s) => $s->getCurrentPosition());
         $stats = [
-            'total' => $mapShipments->count(),
-            'in_transit' => $mapShipments->where('status', 'IN_TRANSIT')->count(),
-            'coffee' => $mapShipments->where('commodity', 'COFFEE')->count(),
-            'cocoa' => $mapShipments->where('commodity', 'COCOA')->count(),
-            'delayed' => $mapShipments->where('is_delayed', true)->count(),
+            'total' => $shipments->count(),
+            'in_transit' => $shipments->where('current_status', 'IN_TRANSIT')->count(),
+            'delivered' => $shipments->where('current_status', 'DELIVERED')->count(),
+            'west_sector' => $allCollection->where('is_west_sector', true)->count(),
+            'signal_offline' => $allCollection->where('is_signal_offline', true)->count(),
+            'signal_active' => $allCollection->where('signal_status', 'ACTIVE')->count(),
+            'coffee' => $shipments->filter(fn($s) => $s->commodity_type === 'COFFEE')->count(),
+            'cocoa' => $shipments->filter(fn($s) => $s->commodity_type === 'COCOA')->count(),
+            'delayed' => $shipments->where('is_delayed', true)->count(),
         ];
 
         return view('map.index', compact('mapShipments', 'carriers', 'stats'));
