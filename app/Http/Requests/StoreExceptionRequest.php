@@ -19,14 +19,7 @@ class StoreExceptionRequest extends FormRequest
             'exception_type' => [
                 'required',
                 'string',
-                Rule::in([
-                    ShipmentException::TYPE_CUSTOMS_HOLD,
-                    ShipmentException::TYPE_WEATHER_DELAY,
-                    ShipmentException::TYPE_PORT_CONGESTION,
-                    ShipmentException::TYPE_DAMAGED,
-                    ShipmentException::TYPE_MISROUTED,
-                    ShipmentException::TYPE_DOCUMENTATION_ISSUE,
-                ]),
+                Rule::in(ShipmentException::allowedTypes()),
             ],
             'severity' => ['nullable', 'string', Rule::in(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])],
             'detected_at' => ['nullable', 'date'],

@@ -602,12 +602,14 @@
             <div>
                 <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Exception Type *</label>
                 <select name="exception_type" required class="w-full text-xs rounded border border-slate-300 px-3 py-2">
-                    <option value="CUSTOMS_HOLD">CUSTOMS_HOLD (Customs Clearance Inspection)</option>
-                    <option value="WEATHER_DELAY">WEATHER_DELAY (Typhoon / High Seas / Storm)</option>
-                    <option value="PORT_CONGESTION">PORT_CONGESTION (Berthing Queue Delay)</option>
+                    <option value="CUSTOMS_HOLD">CUSTOMS_HOLD (Phytosanitary & Customs Inspection)</option>
+                    <option value="WEATHER_DELAY">WEATHER_DELAY (Monsoon / Typhoon / Rough Seas)</option>
+                    <option value="PORT_CONGESTION">PORT_CONGESTION (Berthing Queue / Crane Bottleneck)</option>
                     <option value="DAMAGED">DAMAGED (Cargo Packaging / Seal Disrupted)</option>
-                    <option value="MISROUTED">MISROUTED (Carrier Routing Discrepancy)</option>
-                    <option value="DOCUMENTATION_ISSUE">DOCUMENTATION_ISSUE (Missing Bill of Lading)</option>
+                    <option value="MISROUTED">MISROUTED (Carrier Transshipment Discrepancy)</option>
+                    <option value="DOCUMENTATION_ISSUE">DOCUMENTATION_ISSUE (Missing Bill of Lading / COO)</option>
+                    <option value="ACCIDENT">ACCIDENT (Collision / Maritime Equipment Disruption)</option>
+                    <option value="TECHNICAL_FAILURE">TECHNICAL_FAILURE (Vessel Machinery / Reefer Failure)</option>
                 </select>
             </div>
             <div class="grid grid-cols-2 gap-3">

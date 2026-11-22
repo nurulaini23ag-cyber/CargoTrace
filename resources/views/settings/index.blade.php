@@ -84,19 +84,26 @@
 
             <input type="hidden" name="group_scenario" value="{{ $settings['group_scenario'] ?? 'A' }}">
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Minimum Delay Threshold (Hours)</label>
+                    <input type="number" step="0.5" min="0" name="delay_threshold_min" value="{{ old('delay_threshold_min', $settings['delay_threshold_min'] ?? '0') }}" required
+                        class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900">
+                    <span class="text-[11px] text-slate-400">Deviations exceeding this threshold are flagged as is_delayed = true.</span>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Low Severity Delay Max Hours (LOW)</label>
                     <input type="number" step="0.5" min="1" name="delay_threshold_low" value="{{ old('delay_threshold_low', $settings['delay_threshold_low'] ?? '6') }}" required
                         class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900">
-                    <span class="text-[11px] text-slate-400">Delays between 0h and this threshold are tagged LOW.</span>
+                    <span class="text-[11px] text-slate-400">Delays up to this threshold are tagged LOW.</span>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold uppercase text-slate-700 mb-1">Medium Severity Delay Max Hours (MEDIUM)</label>
                     <input type="number" step="0.5" min="2" name="delay_threshold_medium" value="{{ old('delay_threshold_medium', $settings['delay_threshold_medium'] ?? '24') }}" required
                         class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 text-slate-900">
-                    <span class="text-[11px] text-slate-400">Delays between Low and this threshold are tagged MEDIUM. Delays above this are HIGH.</span>
+                    <span class="text-[11px] text-slate-400">Delays up to this are MEDIUM. Delays above this are HIGH.</span>
                 </div>
             </div>
 

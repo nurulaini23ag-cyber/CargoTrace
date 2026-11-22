@@ -29,6 +29,7 @@ class SystemSettingController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $request->validate([
+            'delay_threshold_min' => ['nullable', 'numeric', 'min:0'],
             'delay_threshold_low' => ['required', 'numeric', 'min:1'],
             'delay_threshold_medium' => ['required', 'numeric', 'gt:delay_threshold_low'],
             'group_scenario' => ['required', 'string', 'in:A,B,C,CUSTOM'],
@@ -36,6 +37,9 @@ class SystemSettingController extends Controller
 
         $old = SystemSetting::all()->pluck('value', 'key')->toArray();
 
+        if ($request->has('delay_threshold_min')) {
+            SystemSetting::set('delay_threshold_min', $request->delay_threshold_min, 'delay_rules', 'Minimum hours threshold to flag shipment as delayed');
+        }
         SystemSetting::set('delay_threshold_low', $request->delay_threshold_low, 'delay_rules', 'Hours threshold for low delay classification');
         SystemSetting::set('delay_threshold_medium', $request->delay_threshold_medium, 'delay_rules', 'Hours threshold for medium delay classification');
         SystemSetting::set('group_scenario', $request->group_scenario, 'scenario', 'Academic UAS group scenario preset');
@@ -46,7 +50,7 @@ class SystemSettingController extends Controller
             null,
             "System delay rules and group scenario updated to Group {$request->group_scenario}.",
             $old,
-            $request->only(['delay_threshold_low', 'delay_threshold_medium', 'group_scenario']),
+            $request->only(['delay_threshold_min', 'delay_threshold_low', 'delay_threshold_medium', 'group_scenario']),
             Auth::id()
         );
 

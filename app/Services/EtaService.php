@@ -23,6 +23,7 @@ class EtaService
         $estimatedArrival = $newEstimatedArrival ? Carbon::parse($newEstimatedArrival) : ($shipment->estimated_arrival ? Carbon::parse($shipment->estimated_arrival) : $expectedArrival);
 
         // Fetch configurable thresholds from SystemSettings or defaults
+        $thresholdMin = (float) SystemSetting::get('delay_threshold_min', 0.0);
         $thresholdLow = (float) SystemSetting::get('delay_threshold_low', 6.0);
         $thresholdMedium = (float) SystemSetting::get('delay_threshold_medium', 24.0);
 
@@ -30,7 +31,7 @@ class EtaService
             // Difference in fractional hours
             $diffInMinutes = $expectedArrival->diffInMinutes($estimatedArrival, false);
             $delayHours = round(abs($diffInMinutes) / 60, 2);
-            $isDelayed = true;
+            $isDelayed = $delayHours > $thresholdMin;
 
             // Determine severity
             if ($delayHours <= $thresholdLow) {

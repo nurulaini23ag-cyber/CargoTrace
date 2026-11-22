@@ -16,6 +16,22 @@ class ShipmentException extends Model
     public const TYPE_DAMAGED = 'DAMAGED';
     public const TYPE_MISROUTED = 'MISROUTED';
     public const TYPE_DOCUMENTATION_ISSUE = 'DOCUMENTATION_ISSUE';
+    public const TYPE_ACCIDENT = 'ACCIDENT';
+    public const TYPE_TECHNICAL_FAILURE = 'TECHNICAL_FAILURE';
+
+    public static function allowedTypes(): array
+    {
+        return [
+            self::TYPE_CUSTOMS_HOLD,
+            self::TYPE_WEATHER_DELAY,
+            self::TYPE_PORT_CONGESTION,
+            self::TYPE_DAMAGED,
+            self::TYPE_MISROUTED,
+            self::TYPE_DOCUMENTATION_ISSUE,
+            self::TYPE_ACCIDENT,
+            self::TYPE_TECHNICAL_FAILURE,
+        ];
+    }
 
     public const STATUS_OPEN = 'OPEN';
     public const STATUS_INVESTIGATING = 'INVESTIGATING';
