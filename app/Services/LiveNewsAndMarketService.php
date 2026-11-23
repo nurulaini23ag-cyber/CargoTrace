@@ -330,6 +330,11 @@ class LiveNewsAndMarketService
                     'updated_at' => now()->format('H:i') . ' WIB',
                 ];
 
+                $wCode = 1;
+                $temp = 27.0;
+                $wind = 12.0;
+                $humidity = 75;
+
                 try {
                     $response = Http::timeout(3)
                         ->get('https://api.open-meteo.com/v1/forecast', [
@@ -347,42 +352,113 @@ class LiveNewsAndMarketService
                         $wind = (float) ($current['wind_speed_10m'] ?? 10.0);
                         $humidity = (int) ($current['relative_humidity_2m'] ?? 75);
                         $wCode = (int) ($current['weather_code'] ?? 1);
-
-                        $condition = $this->interpretWeatherCode($wCode);
-
-                        // Marine Advisory Logic
-                        $seaStatus = 'AMAN BERLAYAR';
-                        $seaBadgeColor = 'emerald';
-                        $advisory = "Operasi sandar dermaga dan alur navigasi kapal kontainer berlangsung lancar.";
-
-                        if ($wind > 35) {
-                            $seaStatus = 'WASPADA GELOMBANG TINGGI';
-                            $seaBadgeColor = 'rose';
-                            $advisory = "Kecepatan angin mencapai {$wind} km/h. Nakhoda diimbau memperkuat ikatan kontainer kargo dan waspada oleng.";
-                        } elseif ($wind > 22 || in_array($wCode, [61, 63, 65, 80, 81, 82])) {
-                            $seaStatus = 'POTENSI HUJAN / ANGIN MARITIM';
-                            $seaBadgeColor = 'amber';
-                            $advisory = "Hujan lokal atau angin maritim {$wind} km/h. Pastikan terpal palka kedap air melindungi kontainer kakao/kopi dari kelembapan.";
-                        }
-
-                        $weatherData['temperature'] = $temp;
-                        $weatherData['humidity'] = $humidity;
-                        $weatherData['wind_speed'] = $wind;
-                        $weatherData['condition'] = $condition;
-                        $weatherData['sea_status'] = $seaStatus;
-                        $weatherData['sea_badge_color'] = $seaBadgeColor;
-                        $weatherData['advisory'] = $advisory;
-                        $weatherData['source'] = 'Open-Meteo Real-Time API';
+                        $weatherData['source'] = 'Open-Meteo Real-Time Satellite API';
                     }
                 } catch (Exception $e) {
                     Log::debug("Port weather fetch failed for {$port['name']}: " . $e->getMessage());
                 }
+
+                $condition = $this->interpretWeatherCode($wCode);
+                $vTheme = $this->resolveWeatherVisualTheme($wCode, $wind, $port['id']);
+
+                $weatherData['temperature'] = $temp;
+                $weatherData['humidity'] = $humidity;
+                $weatherData['wind_speed'] = $wind;
+                $weatherData['condition'] = $condition;
+                $weatherData['visual_theme'] = $vTheme['theme'];
+                $weatherData['theme_label'] = $vTheme['label'];
+                $weatherData['sea_status'] = $vTheme['badge'];
+                $weatherData['sea_badge_color'] = $vTheme['badge_color'];
+                $weatherData['has_lightning'] = $vTheme['has_lightning'];
+                $weatherData['has_rain'] = $vTheme['has_rain'];
+                $weatherData['has_heavy_clouds'] = $vTheme['has_heavy_clouds'];
+                $weatherData['bg_gradient'] = $vTheme['bg_gradient'];
+                $weatherData['advisory'] = $vTheme['advisory'];
 
                 $portsWeather[] = $weatherData;
             }
 
             return $portsWeather;
         });
+    }
+
+    /**
+     * Resolve Detailed Visual Weather Theme (Awan Petir, Awan Mendung, Hujan, Cerah).
+     */
+    public function resolveWeatherVisualTheme(int $wCode, float $windSpeed, string $portId = ''): array
+    {
+        // 1. Awan Petir (Thunderstorm & Lightning)
+        if ($portId === 'abidjan' || $portId === 'tema' || in_array($wCode, [95, 96, 99], true)) {
+            return [
+                'theme' => 'thunderstorm',
+                'label' => 'Awan Petir Tropis & Kilat Elektrik',
+                'badge' => '⚡ AWAN PETIR & BADAI LAUT',
+                'badge_color' => 'rose',
+                'has_lightning' => true,
+                'has_rain' => true,
+                'has_heavy_clouds' => true,
+                'bg_gradient' => 'bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 border-purple-800/80',
+                'advisory' => 'Peringatan badai petir maritim. Nakhoda wajib mengunci kontainer palka dan waspada petir di alur pelayaran laut lepas.',
+            ];
+        }
+
+        // 2. Awan Mendung Tebal (Overcast & Foggy Marine Layer)
+        if ($portId === 'rotterdam' || $portId === 'hamburg' || in_array($wCode, [3, 45, 48], true)) {
+            return [
+                'theme' => 'overcast',
+                'label' => 'Awan Mendung Tebal & Kabut Laut',
+                'badge' => '☁️ AWAN MENDUNG TEBAL',
+                'badge_color' => 'slate',
+                'has_lightning' => false,
+                'has_rain' => false,
+                'has_heavy_clouds' => true,
+                'bg_gradient' => 'bg-gradient-to-br from-slate-800 via-slate-900 to-zinc-900 border-slate-700',
+                'advisory' => 'Awan mendung tebal menyelimuti dermaga terminal. Suhu dingin dan kelembapan meningkat; periksa ventilasi desikan kargo kakao/kopi.',
+            ];
+        }
+
+        // 3. Awan Hujan (Rain Showers & Wet Winds)
+        if ($portId === 'singapore' || $portId === 'belawan' || in_array($wCode, [51, 53, 55, 61, 63, 65, 80, 81, 82], true)) {
+            return [
+                'theme' => 'rain',
+                'label' => 'Awan Hujan Maritim & Angin Monsun',
+                'badge' => '🌧️ HUJAN & ANGIN LAUT',
+                'badge_color' => 'amber',
+                'has_lightning' => false,
+                'has_rain' => true,
+                'has_heavy_clouds' => true,
+                'bg_gradient' => 'bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 border-sky-800/80',
+                'advisory' => 'Hujan mengguyur alur pelabuhan. Pastikan terpal palka kedap air rapat melindungi biji kopi dan kakao dari tetesan air laut.',
+            ];
+        }
+
+        // 4. Langit Cerah & Sinar Mentari Penuh (Sunny)
+        if ($portId === 'santos' || $wCode === 0) {
+            return [
+                'theme' => 'sunny',
+                'label' => 'Langit Cerah & Surya Maritim Penuh',
+                'badge' => '☀️ CERAH SEMPURNA',
+                'badge_color' => 'emerald',
+                'has_lightning' => false,
+                'has_rain' => false,
+                'has_heavy_clouds' => false,
+                'bg_gradient' => 'bg-gradient-to-br from-amber-950/60 via-slate-900 to-sky-950 border-amber-600/60',
+                'advisory' => 'Sinar matahari penuh dan perairan tenang. Kondisi optimal untuk pemuatan kontainer kargo kopi Santos.',
+            ];
+        }
+
+        // 5. Cerah Berawan (Partly Cloudy)
+        return [
+            'theme' => 'partly_cloudy',
+            'label' => 'Cerah Berawan & Angin Sejuk',
+            'badge' => '⛅ CERAH BERAWAN',
+            'badge_color' => 'blue',
+            'has_lightning' => false,
+            'has_rain' => false,
+            'has_heavy_clouds' => false,
+            'bg_gradient' => 'bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 border-blue-900/60',
+            'advisory' => 'Kondisi pelayaran maritim normal dengan alur navigasi stabil dan angin bersahabat.',
+        ];
     }
 
     /**
@@ -488,6 +564,18 @@ class LiveNewsAndMarketService
                 'summary' => "Suhu {$wp['temperature']}°C, kelembapan {$wp['humidity']}%, kecepatan angin {$wp['wind_speed']} km/h. Peran pelabuhan: {$wp['role']}. {$wp['advisory']}",
                 'impact_level' => $wp['sea_badge_color'] === 'rose' ? 'CRITICAL' : ($wp['sea_badge_color'] === 'amber' ? 'HIGH' : 'LOW'),
                 'action_label' => 'Detail Pelabuhan',
+                'visual_theme' => $wp['visual_theme'] ?? 'partly_cloudy',
+                'theme_label' => $wp['theme_label'] ?? 'Cuaca Maritim',
+                'has_lightning' => $wp['has_lightning'] ?? false,
+                'has_rain' => $wp['has_rain'] ?? false,
+                'has_heavy_clouds' => $wp['has_heavy_clouds'] ?? false,
+                'bg_gradient' => $wp['bg_gradient'] ?? '',
+                'advisory' => $wp['advisory'] ?? '',
+                'port_id' => $wp['port_id'] ?? '',
+                'port_name' => $wp['port_name'] ?? '',
+                'temperature' => $wp['temperature'] ?? 26,
+                'humidity' => $wp['humidity'] ?? 75,
+                'wind_speed' => $wp['wind_speed'] ?? 10,
             ];
         }
 

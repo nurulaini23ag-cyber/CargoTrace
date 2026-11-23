@@ -104,6 +104,22 @@ class LiveNewsAndMarketNotificationsTest extends TestCase
         ]);
     }
 
+    public function test_notifications_page_renders_weather_visual_themes_and_animations(): void
+    {
+        $this->actingAs($this->user);
+
+        $response = $this->get('/notifications');
+
+        $response->assertStatus(200);
+        $response->assertSee('Radar Visual Cuaca Pelabuhan Maritim Dunia');
+        $response->assertSee('Awan Petir');
+        $response->assertSee('Awan Mendung');
+        $response->assertSee('anim-lightning');
+        $response->assertSee('anim-cloud-1');
+        $response->assertSee('anim-rain-1');
+        $response->assertSee('anim-sun-core');
+    }
+
     public function test_live_news_service_handles_api_failure_gracefully_with_fallbacks(): void
     {
         // Fake complete network failure
