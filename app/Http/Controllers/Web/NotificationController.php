@@ -4,16 +4,62 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
+use App\Services\LiveNewsAndMarketService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
-    public function index(): View
+    public function __construct(
+        protected LiveNewsAndMarketService $liveNewsService
+    ) {}
+
+    /**
+     * Display Notification Center with Live FX & World Port Weather News.
+     */
+    public function index(Request $request): View
     {
-        $notifications = Auth::user()->notifications()->paginate(15);
-        return view('notifications.index', compact('notifications'));
+        $user = Auth::user();
+        $notifications = $user->notifications()->paginate(15);
+
+        $forceRefresh = $request->boolean('refresh');
+        $liveIntelligence = $this->liveNewsService->getAggregatedLiveNewsFeed($forceRefresh);
+
+        $currencyRates = $liveIntelligence['fx']['rates'] ?? [];
+        $weatherPorts = $liveIntelligence['weather_ports'] ?? [];
+        $newsItems = $liveIntelligence['news_items'] ?? [];
+        $generatedAt = $liveIntelligence['generated_at'];
+        $fxSource = $liveIntelligence['fx']['source'] ?? 'ExchangeRate-API Global';
+
+        $unreadSystemCount = $user->notifications()->where('is_read', false)->count();
+
+        return view('notifications.index', compact(
+            'notifications',
+            'currencyRates',
+            'weatherPorts',
+            'newsItems',
+            'generatedAt',
+            'fxSource',
+            'unreadSystemCount'
+        ));
+    }
+
+    /**
+     * JSON Endpoint for Real-Time Live Feed Refresh via Fetch API.
+     */
+    public function liveFeeds(Request $request): JsonResponse
+    {
+        $forceRefresh = $request->boolean('refresh', true);
+        $liveIntelligence = $this->liveNewsService->getAggregatedLiveNewsFeed($forceRefresh);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Berita kurs valuta asing dan cuaca maritim global berhasil diperbarui secara real-time.',
+            'data' => $liveIntelligence,
+        ]);
     }
 
     public function markAsRead(int $id): RedirectResponse
@@ -24,7 +70,7 @@ class NotificationController extends Controller
             'read_at' => now(),
         ]);
 
-        return back()->with('info', 'Notification marked as read.');
+        return back()->with('info', 'Notifikasi berhasil ditandai telah dibaca.');
     }
 
     public function markAllAsRead(): RedirectResponse
@@ -34,6 +80,6 @@ class NotificationController extends Controller
             'read_at' => now(),
         ]);
 
-        return back()->with('success', 'All notifications marked as read.');
+        return back()->with('success', 'Semua notifikasi sistem berhasil ditandai telah dibaca.');
     }
 }

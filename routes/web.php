@@ -54,8 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
     Route::get('/shipments/{id}', [ShipmentController::class, 'show'])->name('shipments.show');
 
-    // In-app Notifications
+    // In-app Notifications & Live Market/Weather Feeds
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/live-feeds', [NotificationController::class, 'liveFeeds'])->name('notifications.liveFeeds');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
 
