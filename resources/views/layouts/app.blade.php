@@ -75,12 +75,15 @@
                         Lacak Publik
                     </a>
 
+                    @if(Auth::user()->isAdmin() || Auth::user()->isOperator())
+                        <a href="{{ route('locations.index') }}" class="px-3 py-2 rounded-md transition flex items-center gap-1.5 {{ request()->routeIs('locations.*') ? 'bg-slate-800 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                            <span>📍</span> Lokasi & Pelabuhan
+                        </a>
+                    @endif
+
                     @if(Auth::user()->isAdmin())
                         <a href="{{ route('carriers.index') }}" class="px-3 py-2 rounded-md transition {{ request()->routeIs('carriers.*') ? 'bg-slate-800 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                             Carriers
-                        </a>
-                        <a href="{{ route('locations.index') }}" class="px-3 py-2 rounded-md transition {{ request()->routeIs('locations.*') ? 'bg-slate-800 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
-                            Locations
                         </a>
                         <a href="{{ route('users.index') }}" class="px-3 py-2 rounded-md transition {{ request()->routeIs('users.*') ? 'bg-slate-800 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                             Users

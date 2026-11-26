@@ -70,6 +70,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/shipments/{id}/tracking', [TrackingController::class, 'store'])->name('shipments.tracking.store');
         Route::post('/shipments/{id}/exceptions', [ExceptionController::class, 'store'])->name('shipments.exceptions.store');
         Route::patch('/exceptions/{id}', [ExceptionController::class, 'update'])->name('exceptions.update');
+
+        // Locations & Ports Directory (Admin & Operator)
+        Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
+        Route::post('/locations', [LocationController::class, 'store'])->name('locations.store');
+        Route::get('/locations/geocode-lookup', [LocationController::class, 'geocodeLookup'])->name('locations.geocode');
+        Route::get('/locations/reverse-geocode', [LocationController::class, 'reverseGeocode'])->name('locations.reverseGeocode');
     });
 
     // Administrator Only Routes
@@ -80,11 +86,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/carriers', [CarrierController::class, 'index'])->name('carriers.index');
         Route::post('/carriers', [CarrierController::class, 'store'])->name('carriers.store');
         Route::post('/carriers/{id}/toggle', [CarrierController::class, 'toggle'])->name('carriers.toggle');
-
-        // Locations
-        Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
-        Route::post('/locations', [LocationController::class, 'store'])->name('locations.store');
-        Route::get('/locations/geocode-lookup', [LocationController::class, 'geocodeLookup'])->name('locations.geocode');
 
         // Users
         Route::get('/users', [UserController::class, 'index'])->name('users.index');

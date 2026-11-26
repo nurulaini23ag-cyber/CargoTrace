@@ -55,4 +55,14 @@ class LocationController extends Controller
         $query = $request->get('q', '');
         return response()->json($this->externalApiService->geocode($query));
     }
+
+    /**
+     * API lookup to reverse geocode coordinates into address, city, country.
+     */
+    public function reverseGeocode(Request $request): JsonResponse
+    {
+        $lat = (float) $request->get('lat', 0);
+        $lng = (float) $request->get('lng', 0);
+        return response()->json($this->externalApiService->reverseGeocode($lat, $lng));
+    }
 }
