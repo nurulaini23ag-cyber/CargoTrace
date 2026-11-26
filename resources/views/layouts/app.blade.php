@@ -68,6 +68,12 @@
                     <a href="{{ route('map.index') }}" class="px-3 py-2 rounded-md transition flex items-center gap-1.5 {{ request()->routeIs('map.*') ? 'bg-[#C49A55] text-slate-900 font-bold' : 'text-[#E8D7B9] hover:bg-slate-800 hover:text-white' }}">
                         <span>🌍</span> Peta Kargo
                     </a>
+                    <a href="{{ route('catalog.index') }}" class="px-3 py-2 rounded-md transition flex items-center gap-1.5 {{ request()->routeIs('catalog.*') ? 'bg-amber-600 text-white font-bold' : 'text-amber-200 hover:bg-slate-800 hover:text-white' }}">
+                        <span>☕</span> Beli Komoditas
+                    </a>
+                    <a href="{{ route('orders.index') }}" class="px-3 py-2 rounded-md transition flex items-center gap-1.5 {{ request()->routeIs('orders.*') || request()->routeIs('payments.*') ? 'bg-slate-800 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                        <span>📋</span> Pesanan Saya
+                    </a>
                     <a href="{{ route('shipments.index') }}" class="px-3 py-2 rounded-md transition {{ request()->routeIs('shipments.*') ? 'bg-slate-800 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                         Shipments
                     </a>

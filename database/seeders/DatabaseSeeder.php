@@ -3,14 +3,21 @@
 namespace Database\Seeders;
 
 use App\Models\AuditLog;
+use App\Models\Buyer;
 use App\Models\Carrier;
+use App\Models\Category;
+use App\Models\Country;
 use App\Models\Location;
 use App\Models\Notification;
+use App\Models\Payment;
+use App\Models\Product;
 use App\Models\Shipment;
 use App\Models\ShipmentException;
 use App\Models\ShipmentItem;
+use App\Models\Supplier;
 use App\Models\SystemSetting;
 use App\Models\TrackingEvent;
+use App\Models\TradeTransaction;
 use App\Models\User;
 use App\Services\EtaService;
 use Carbon\Carbon;
@@ -652,7 +659,7 @@ class DatabaseSeeder extends Seeder
                     ['time_sub_days' => 14, 'loc' => $dji, 'desc' => 'Loaded at Doraleh Container Terminal Djibouti.'],
                     ['time_sub_days' => 9, 'loc' => null, 'name' => 'Red Sea Transit Lane', 'lat' => 22.1000, 'lon' => 38.2000, 'desc' => 'Vessel sailing northbound toward Suez Canal.'],
                     ['time_sub_days' => 5, 'loc' => null, 'name' => 'Mediterranean Sea (Sicily Strait)', 'lat' => 37.1000, 'lon' => 12.3000, 'desc' => 'Passing Mediterranean transit point on course for Gibraltar.'],
-                    ['time_sub_days' => 1, 'loc' => null, 'name' => 'Mid-Atlantic Transit (34.5N, -35.2W)', 'lat' => 34.5000, 'lon' => -35.2000, 'desc' => 'Cruising westbound across North Atlantic at 19.5 knots.'],
+                    ['time_sub_days' => 1, 'loc' => null, 'name' => 'Mid-Atlantic Transit (35.5N, -35.0W)', 'lat' => 35.5000, 'lon' => -35.0000, 'desc' => 'Cruising westbound across North Atlantic at 19.5 knots on direct New York course.'],
                 ]
             ],
 
@@ -1122,5 +1129,555 @@ class DatabaseSeeder extends Seeder
                 'user_agent' => 'DatabaseSeeder/CLI',
             ]);
         }
+
+        // 6. Countries (Slide 04 & 11) - Origin & Destination Maritime Nations
+        $countriesData = [
+            ['code' => 'ID', 'name' => 'Indonesia', 'region' => 'Southeast Asia', 'default_port' => 'Belawan Port, Medan', 'latitude' => -0.789275, 'longitude' => 113.921327, 'flag_emoji' => '🇮🇩', 'is_origin' => true, 'is_destination' => false],
+            ['code' => 'GH', 'name' => 'Ghana', 'region' => 'West Africa', 'default_port' => 'Tema Port, Ghana', 'latitude' => 7.946527, 'longitude' => -1.023194, 'flag_emoji' => '🇬🇭', 'is_origin' => true, 'is_destination' => false],
+            ['code' => 'CI', 'name' => 'Côte d\'Ivoire', 'region' => 'West Africa', 'default_port' => 'Port of Abidjan', 'latitude' => 7.539989, 'longitude' => -5.547080, 'flag_emoji' => '🇨🇮', 'is_origin' => true, 'is_destination' => false],
+            ['code' => 'VN', 'name' => 'Vietnam', 'region' => 'Southeast Asia', 'default_port' => 'Port of Da Nang', 'latitude' => 14.058324, 'longitude' => 108.277199, 'flag_emoji' => '🇻🇳', 'is_origin' => true, 'is_destination' => false],
+            ['code' => 'ET', 'name' => 'Ethiopia', 'region' => 'East Africa', 'default_port' => 'Port of Djibouti Gateway', 'latitude' => 9.145000, 'longitude' => 40.489673, 'flag_emoji' => '🇪🇹', 'is_origin' => true, 'is_destination' => false],
+            ['code' => 'NL', 'name' => 'Netherlands', 'region' => 'Europe', 'default_port' => 'Port of Rotterdam', 'latitude' => 52.132633, 'longitude' => 5.291266, 'flag_emoji' => '🇳🇱', 'is_origin' => false, 'is_destination' => true],
+            ['code' => 'DE', 'name' => 'Germany', 'region' => 'Europe', 'default_port' => 'Port of Hamburg', 'latitude' => 51.165691, 'longitude' => 10.451526, 'flag_emoji' => '🇩🇪', 'is_origin' => false, 'is_destination' => true],
+            ['code' => 'BE', 'name' => 'Belgium', 'region' => 'Europe', 'default_port' => 'Port of Antwerp', 'latitude' => 50.503887, 'longitude' => 4.469936, 'flag_emoji' => '🇧🇪', 'is_origin' => false, 'is_destination' => true],
+            ['code' => 'IT', 'name' => 'Italy', 'region' => 'Europe', 'default_port' => 'Port of Genoa', 'latitude' => 41.871940, 'longitude' => 12.567380, 'flag_emoji' => '🇮🇹', 'is_origin' => false, 'is_destination' => true],
+            ['code' => 'US', 'name' => 'United States', 'region' => 'North America', 'default_port' => 'Port of New York & New Jersey', 'latitude' => 37.090240, 'longitude' => -95.712891, 'flag_emoji' => '🇺🇸', 'is_origin' => false, 'is_destination' => true],
+        ];
+
+        $countries = [];
+        foreach ($countriesData as $cd) {
+            $countries[$cd['code']] = Country::firstOrCreate(['code' => $cd['code']], $cd);
+        }
+
+        // 7. Categories (Cocoa & Coffee)
+        $cocoaCategory = Category::firstOrCreate(['slug' => 'cocoa'], [
+            'name' => 'Cocoa Products (Cokelat & Olahan Kakao)',
+            'slug' => 'cocoa',
+            'description' => 'Premium certified cocoa beans, natural cocoa butter, alkalized cocoa powder, and single-origin cocoa liquor from West Africa and Indonesia.',
+            'icon' => '🍫',
+        ]);
+
+        $coffeeCategory = Category::firstOrCreate(['slug' => 'coffee'], [
+            'name' => 'Specialty Coffee (Kopi Arabika & Robusta)',
+            'slug' => 'coffee',
+            'description' => 'High-grade specialty green coffee beans, roasted single origins, and commercial grade robusta from Sumatra, Java, Vietnam, and Ethiopia.',
+            'icon' => '☕',
+        ]);
+
+        // 8. Suppliers (Exporters / Producers)
+        $suppliers = [
+            'ID' => Supplier::firstOrCreate(['email' => 'export@nusantara-agri.co.id'], [
+                'company_name' => 'PT Nusantara Agri Global Ekspor',
+                'contact_person' => 'Hendra Gunawan',
+                'country_id' => $countries['ID']->id,
+                'email' => 'export@nusantara-agri.co.id',
+                'phone' => '+62 811 2345 6789',
+                'address' => 'Jl. Pelabuhan Belawan No. 45, Medan, Sumatera Utara',
+                'products_supplied' => 'Sumatra Mandheling Arabica, Toraja Sapan, Lampung Robusta, Sulawesi Cocoa',
+                'certifications' => 'Rainforest Alliance, Fairtrade Organic, Halal Indonesia, USDA Organic',
+                'rating' => 4.95,
+                'status' => 'ACTIVE',
+                'user_id' => $customer1->id,
+            ]),
+            'GH' => Supplier::firstOrCreate(['email' => 'trade@cocobod.gh'], [
+                'company_name' => 'Ghana Cocoa Marketing Board (COCOBOD)',
+                'contact_person' => 'Kwame Nkrumah Boateng',
+                'country_id' => $countries['GH']->id,
+                'email' => 'trade@cocobod.gh',
+                'phone' => '+233 30 266 1872',
+                'address' => 'Cocoa House, 42 Kwame Nkrumah Avenue, Accra, Ghana',
+                'products_supplied' => 'Standard Fermented Ghana Cocoa Beans Grade 1, Pure Cocoa Butter',
+                'certifications' => 'Fairtrade Certified, UTZ Certified, Traceable Main Crop',
+                'rating' => 4.90,
+                'status' => 'ACTIVE',
+            ]),
+            'CI' => Supplier::firstOrCreate(['email' => 'coop@cacao-abidjan.ci'], [
+                'company_name' => 'Coopérative Ivoirienne des Producteurs de Cacao (CIPROCA)',
+                'contact_person' => 'Amadou Koné',
+                'country_id' => $countries['CI']->id,
+                'email' => 'coop@cacao-abidjan.ci',
+                'phone' => '+225 27 21 25 40 00',
+                'address' => 'Zone Portuaire, Boulevard du Port, Abidjan, Côte d\'Ivoire',
+                'products_supplied' => 'Ivorian Dried Cocoa Beans, Pure Ground Cocoa Mass / Liquor',
+                'certifications' => 'Rainforest Alliance, Good Fermented Cocoa Grade',
+                'rating' => 4.80,
+                'status' => 'ACTIVE',
+            ]),
+            'VN' => Supplier::firstOrCreate(['email' => 'sales@vietnamcoffee-export.vn'], [
+                'company_name' => 'Central Highlands Coffee Exporters Joint Stock Co.',
+                'contact_person' => 'Nguyen Van Minh',
+                'country_id' => $countries['VN']->id,
+                'email' => 'sales@vietnamcoffee-export.vn',
+                'phone' => '+84 236 382 1928',
+                'address' => 'Tien Sa Port Logistics Zone, Da Nang, Vietnam',
+                'products_supplied' => 'Vietnam Dak Lak Wet-Polished Robusta Grade 1 Screen 18',
+                'certifications' => '4C Certified, UTZ Certified, Clean Polished Export Grade',
+                'rating' => 4.85,
+                'status' => 'ACTIVE',
+            ]),
+            'ET' => Supplier::firstOrCreate(['email' => 'union@yirgacheffecoffee.et'], [
+                'company_name' => 'Yirgacheffe Coffee Farmers Cooperative Union (YCFCU)',
+                'contact_person' => 'Tadesse Meskela',
+                'country_id' => $countries['ET']->id,
+                'email' => 'union@yirgacheffecoffee.et',
+                'phone' => '+251 11 442 6540',
+                'address' => 'Bole Sub-City, Addis Ababa / Djibouti Port Gateway, Ethiopia',
+                'products_supplied' => 'Ethiopian Yirgacheffe Grade 1 Washed Heirloom Coffee',
+                'certifications' => 'Fairtrade Organic, Specialty Coffee Association Q-Score 88.5',
+                'rating' => 4.98,
+                'status' => 'ACTIVE',
+            ]),
+        ];
+
+        // 9. Buyers (Importers / Customers)
+        $buyers = [
+            'CH' => Buyer::firstOrCreate(['email' => 'swissroasters@cargotrace.test'], [
+                'company_name' => 'Swiss Cocoa & Coffee Roasters AG',
+                'contact_person' => 'Marc Oberholzer',
+                'country_id' => $countries['NL']->id,
+                'email' => 'swissroasters@cargotrace.test',
+                'phone' => '+41 44 211 4050',
+                'address' => 'Bahnhofstrasse 104, 8001 Zurich, Switzerland',
+                'buyer_type' => 'Roaster & Chocolatier',
+                'annual_volume_mt' => 450.00,
+                'status' => 'ACTIVE',
+                'user_id' => $customer1->id,
+            ]),
+            'NL' => Buyer::firstOrCreate(['email' => 'jde@cargotrace.test'], [
+                'company_name' => 'JDE Peet\'s European Supply Chain B.V.',
+                'contact_person' => 'Jan van Dijk',
+                'country_id' => $countries['NL']->id,
+                'email' => 'jde@cargotrace.test',
+                'phone' => '+31 20 555 8900',
+                'address' => 'Oosterdoksstraat 80, 1011 DK Amsterdam, Netherlands',
+                'buyer_type' => 'Roaster',
+                'annual_volume_mt' => 1200.00,
+                'status' => 'ACTIVE',
+                'user_id' => $customer2->id,
+            ]),
+            'DE' => Buyer::firstOrCreate(['email' => 'barry@cargotrace.test'], [
+                'company_name' => 'Barry Callebaut Sourcing AG (Hamburg Division)',
+                'contact_person' => 'Hélène Dupont',
+                'country_id' => $countries['DE']->id,
+                'email' => 'barry@cargotrace.test',
+                'phone' => '+49 40 555 3400',
+                'address' => 'Am Sandtorkai 72, 20457 Hamburg, Germany',
+                'buyer_type' => 'Chocolatier',
+                'annual_volume_mt' => 2500.00,
+                'status' => 'ACTIVE',
+                'user_id' => $customer3->id,
+            ]),
+            'US' => Buyer::firstOrCreate(['email' => 'bluebottle@cargotrace.test'], [
+                'company_name' => 'Blue Bottle Specialty Importers LLC',
+                'contact_person' => 'Marcus Vance',
+                'country_id' => $countries['US']->id,
+                'email' => 'bluebottle@cargotrace.test',
+                'phone' => '+1 415 555 9821',
+                'address' => '300 Webster St, Oakland, CA 94607, USA',
+                'buyer_type' => 'Specialty Roaster',
+                'annual_volume_mt' => 380.00,
+                'status' => 'ACTIVE',
+                'user_id' => $customer4->id,
+            ]),
+        ];
+
+        // 10. Products Catalog (Cocoa & Coffee)
+        $productsData = [
+            // Cocoa Products
+            [
+                'category_id' => $cocoaCategory->id,
+                'name' => 'Ghana Premium Fermented Cocoa Beans',
+                'slug' => 'ghana-premium-fermented-cocoa-beans',
+                'origin_country_id' => $countries['GH']->id,
+                'grade' => 'Grade 1 Main Crop (Well Fermented)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 3450.00,
+                'currency' => 'USD',
+                'stock_availability' => 850.00,
+                'product_status' => 'Available',
+                'description' => 'World-renowned Ghanaian cocoa beans characterized by a deep, rich chocolate aroma with low acidity and balanced bitterness. Ideal for European chocolate artisans and industrial confectionery manufacturing.',
+                'specifications' => [
+                    'moisture' => '7.2% max',
+                    'bean_count' => '95-100 beans per 100g',
+                    'defects' => 'Less than 3% slaty / mouldy',
+                    'fermentation' => '6-day wooden box fermentation',
+                    'packaging' => '60kg Food-Grade Jute Bags with inner GrainPro liner',
+                    'harvest_season' => 'Main Crop 2025/2026',
+                    'certifications' => ['Fairtrade Certified', 'Rainforest Alliance', 'COCOBOD Quality Seal'],
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => true,
+            ],
+            [
+                'category_id' => $cocoaCategory->id,
+                'name' => 'Ivorian Good Fermented Dried Cocoa Beans',
+                'slug' => 'ivorian-dried-cocoa-beans',
+                'origin_country_id' => $countries['CI']->id,
+                'grade' => 'Good Fermented Grade (Main Crop)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 3200.00,
+                'currency' => 'USD',
+                'stock_availability' => 1200.00,
+                'product_status' => 'Available',
+                'description' => 'Top-tier Forastero cocoa beans cultivated across the tropical rainforest belt of Côte d\'Ivoire. High fat content (54% cocoa butter) suitable for cocoa butter pressing and liquor production.',
+                'specifications' => [
+                    'moisture' => '7.4% max',
+                    'bean_count' => '100-105 beans per 100g',
+                    'defects' => 'Max 4%',
+                    'fat_content' => '54.2%',
+                    'packaging' => '60kg Export Jute Bags',
+                    'harvest_season' => 'Main Crop 2025/2026',
+                    'certifications' => ['Fairtrade Certified', 'UTZ Traceable'],
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => true,
+            ],
+            [
+                'category_id' => $cocoaCategory->id,
+                'name' => 'Pure Prime Pressed Natural Cocoa Butter',
+                'slug' => 'pure-prime-pressed-cocoa-butter',
+                'origin_country_id' => $countries['ID']->id,
+                'grade' => 'Food Grade Deodorized (Export Standard)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 7800.00,
+                'currency' => 'USD',
+                'stock_availability' => 320.00,
+                'product_status' => 'Available',
+                'description' => 'Golden pale, deodorized pure prime pressed cocoa butter extracted from high-flavor Indonesian cocoa. Solid at room temperature, melting smoothly at 34°C with a silky finish. Shipped in Reefer containers.',
+                'specifications' => [
+                    'melting_point' => '33.5°C - 35.0°C',
+                    'free_fatty_acids' => 'Max 1.75%',
+                    'iodine_value' => '33 - 38 g I2/100g',
+                    'saponification' => '188 - 198 mg KOH/g',
+                    'shipping_temp' => 'Reefer Container strictly maintained at 18.0°C',
+                    'packaging' => '25kg Polyethylene-lined Corrugated Master Cartons',
+                    'certifications' => ['Kosher', 'Halal Indonesia', 'HACCP', 'ISO 22000'],
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => true,
+            ],
+            [
+                'category_id' => $cocoaCategory->id,
+                'name' => 'Dutch-Process Alkalized Cocoa Powder (10-12% Fat)',
+                'slug' => 'dutch-process-alkalized-cocoa-powder',
+                'origin_country_id' => $countries['ID']->id,
+                'grade' => 'Premium Bakery & Confectionery Grade',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 4200.00,
+                'currency' => 'USD',
+                'stock_availability' => 450.00,
+                'product_status' => 'Available',
+                'description' => 'Deep rich brown alkalized cocoa powder with a smooth, mellow chocolate profile and superior dispersibility. pH 6.8 - 7.2. Ideal for premium cakes, ice creams, confectionery, and dairy beverages.',
+                'specifications' => [
+                    'fat_content' => '10% - 12%',
+                    'ph_value' => '6.8 - 7.2',
+                    'fineness' => 'Min 99.5% through 200 mesh',
+                    'moisture' => 'Max 4.5%',
+                    'packaging' => '25kg Multiwall Kraft Paper Bags with Inner PE Liner',
+                    'certifications' => ['Halal', 'Kosher', 'BRCGS Food Safety'],
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => false,
+            ],
+            [
+                'category_id' => $cocoaCategory->id,
+                'name' => 'Pure Ground Cocoa Liquor / Mass (53% Fat)',
+                'slug' => 'pure-ground-cocoa-liquor-mass',
+                'origin_country_id' => $countries['CI']->id,
+                'grade' => 'Industrial Chocolate Manufacturer Grade',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 5600.00,
+                'currency' => 'USD',
+                'stock_availability' => 390.00,
+                'product_status' => 'Available',
+                'description' => 'Unsweetened 100% pure cocoa mass produced from finely milled roasted nibs. Smooth viscosity and full-bodied roasted chocolate notes with notes of dried fruit.',
+                'specifications' => [
+                    'cocoa_butter' => '52.0% - 54.0%',
+                    'fineness' => 'Min 99.0% through 75 microns',
+                    'moisture' => 'Max 1.5%',
+                    'packaging' => '25kg Solidified Block Cartons with Thermal Barrier Liner',
+                    'certifications' => ['Rainforest Alliance', 'UTZ'],
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => false,
+            ],
+            [
+                'category_id' => $cocoaCategory->id,
+                'name' => 'Sulawesi Single-Estate Fine Flavor Cocoa Beans',
+                'slug' => 'sulawesi-single-estate-cocoa-beans',
+                'origin_country_id' => $countries['ID']->id,
+                'grade' => 'Specialty Artisan Grade (Fine Flavor)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 3800.00,
+                'currency' => 'USD',
+                'stock_availability' => 240.00,
+                'product_status' => 'Available',
+                'description' => 'Hand-harvested from volcanic highland slopes of South Sulawesi. Specially fermented for 5 days to cultivate subtle floral, molasses, and berry undertones prized by bean-to-bar chocolatiers.',
+                'specifications' => [
+                    'moisture' => '7.0% max',
+                    'bean_count' => '90-95 beans per 100g',
+                    'defects' => 'Less than 1.5%',
+                    'packaging' => '60kg GrainPro-lined Jute Bags',
+                    'certifications' => ['Indonesian Geographical Indication', 'Single Estate Certified'],
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => false,
+            ],
+
+            // Coffee Products
+            [
+                'category_id' => $coffeeCategory->id,
+                'name' => 'Sumatra Mandheling Grade 1 Specialty Green Coffee',
+                'slug' => 'sumatra-mandheling-grade-1-green-coffee',
+                'origin_country_id' => $countries['ID']->id,
+                'grade' => 'Specialty Grade 1 (Triple Picked TP)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 5200.00,
+                'currency' => 'USD',
+                'stock_availability' => 600.00,
+                'product_status' => 'Available',
+                'description' => 'World-famous Indonesian wet-hulled (Giling Basah) Arabica from the fertile volcanic soils around Lake Toba, North Sumatra. Heavy syrupy body, earthy cedar nuances, low acidity, and dark cocoa finish.',
+                'specifications' => [
+                    'variety' => 'Arabica Typica & Catimor',
+                    'processing' => 'Wet-Hulled (Giling Basah)',
+                    'elevation' => '1,200 - 1,500 MASL',
+                    'screen_size' => 'Screen 18/19',
+                    'moisture' => '11.8%',
+                    'defects' => 'Max 3 defects per 300g (Triple Picked)',
+                    'packaging' => '60kg Food-Grade Jute Bags with Hermetic GrainPro Liner',
+                    'certifications' => ['Specialty Coffee Association Q-Grade 85+', 'Fairtrade'],
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1587734195503-904fca47e0e9?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => true,
+            ],
+            [
+                'category_id' => $coffeeCategory->id,
+                'name' => 'Toraja Sapan Artisan Roasted Arabica Coffee',
+                'slug' => 'toraja-sapan-artisan-roasted-arabica',
+                'origin_country_id' => $countries['ID']->id,
+                'grade' => 'Specialty Medium Roast (Whole Bean)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 6400.00,
+                'currency' => 'USD',
+                'stock_availability' => 280.00,
+                'product_status' => 'Available',
+                'description' => 'Sourced from the prestigious Sapan high plateaus of Tana Toraja, Sulawesi. Expertly medium-roasted in micro-batches to highlight notes of ripe dark cherries, brown sugar, cinnamon, and a lingering floral aroma.',
+                'specifications' => [
+                    'variety' => 'Arabica S-795 & Typica',
+                    'elevation' => '1,700 - 2,100 MASL',
+                    'roast_profile' => 'City+ Medium Roast',
+                    'packaging' => '1kg Multiwall Foil Degassing Valve Bags in 10kg Master Cartons',
+                    'moisture' => '2.1%',
+                    'cupping_score' => '86.5 SCAA',
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => true,
+            ],
+            [
+                'category_id' => $coffeeCategory->id,
+                'name' => 'Aceh Gayo Organic Fairtrade Arabica Green Coffee',
+                'slug' => 'aceh-gayo-organic-fairtrade-arabica',
+                'origin_country_id' => $countries['ID']->id,
+                'grade' => 'Specialty Certified Organic (Hand Picked)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 5800.00,
+                'currency' => 'USD',
+                'stock_availability' => 520.00,
+                'product_status' => 'Available',
+                'description' => 'Shade-grown by indigenous Gayo smallholders under the canopy of tropical rainforests around Lake Laut Tawar. Certified 100% organic with sweet herbal complexity, juicy mandarin acidity, and velvety body.',
+                'specifications' => [
+                    'variety' => 'Arabica Gayo 1 & Gayo 2 (Timtim)',
+                    'processing' => 'Semi-Washed / Giling Basah',
+                    'elevation' => '1,300 - 1,600 MASL',
+                    'moisture' => '11.2%',
+                    'certifications' => ['USDA Organic', 'EU Organic', 'Fairtrade Certified'],
+                    'packaging' => '60kg GrainPro Jute Sacks',
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1610632380989-680fe40816c6?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => true,
+            ],
+            [
+                'category_id' => $coffeeCategory->id,
+                'name' => 'Lampung EK-1 Natural Robusta Coffee Beans',
+                'slug' => 'lampung-natural-robusta-coffee',
+                'origin_country_id' => $countries['ID']->id,
+                'grade' => 'Grade 1 Dry Processed (Screen 18)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 3100.00,
+                'currency' => 'USD',
+                'stock_availability' => 1500.00,
+                'product_status' => 'Available',
+                'description' => 'Classic Indonesian high-crema Robusta from the southern tip of Sumatra. Imparts a massive crema layer, toasted walnut body, and dark caramel tones favored by European espresso blenders.',
+                'specifications' => [
+                    'variety' => 'Coffea Canephora (Robusta)',
+                    'processing' => 'Natural Sun-Dried',
+                    'screen_size' => 'Screen 18 (7.1mm)',
+                    'defects' => 'Max 80 defects (EK-1 Export Standard)',
+                    'moisture' => '12.2%',
+                    'packaging' => '60kg Standard Export Bags / 20ft Bulk Container Liner',
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => false,
+            ],
+            [
+                'category_id' => $coffeeCategory->id,
+                'name' => 'Vietnam Dak Lak Wet-Polished Robusta Grade 1',
+                'slug' => 'vietnam-dak-lak-polished-robusta',
+                'origin_country_id' => $countries['VN']->id,
+                'grade' => 'Grade 1 Wet-Polished (Screen 18)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 2950.00,
+                'currency' => 'USD',
+                'stock_availability' => 2000.00,
+                'product_status' => 'Available',
+                'description' => 'From Buon Ma Thuot, the coffee capital of Vietnam. Wet-polished to remove silverskin, yielding an ultra-clean cup with bold dark chocolate and roasted grain notes. Low defect count.',
+                'specifications' => [
+                    'variety' => 'Robusta (Canephora)',
+                    'processing' => 'Wet-Polished & Machine Cleaned',
+                    'screen_size' => 'Screen 18 (90% min)',
+                    'moisture' => '12.0%',
+                    'foreign_matter' => 'Max 0.1%',
+                    'packaging' => '60kg Jute Bags / Container Bulk Bags',
+                    'certifications' => ['4C Association', 'UTZ Certified'],
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1509785307050-d4066910ec1e?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => false,
+            ],
+            [
+                'category_id' => $coffeeCategory->id,
+                'name' => 'Ethiopian Yirgacheffe Washed Specialty Coffee',
+                'slug' => 'ethiopian-yirgacheffe-washed-specialty',
+                'origin_country_id' => $countries['ET']->id,
+                'grade' => 'Specialty Grade 1 Washed (Q-Score 88.5)',
+                'weight_per_unit' => 1.00,
+                'unit' => 'MT',
+                'price' => 7200.00,
+                'currency' => 'USD',
+                'stock_availability' => 310.00,
+                'product_status' => 'Available',
+                'description' => 'Widely recognized as one of the world\'s finest specialty coffees. Exquisite jasmine blossom aroma, sparkling bergamot and lemon tea acidity, with a delicate honey sweetness.',
+                'specifications' => [
+                    'variety' => 'Ethiopian Indigenous Heirloom Cultivars',
+                    'processing' => 'Fully Washed & African Raised Drying Beds',
+                    'elevation' => '1,900 - 2,200 MASL',
+                    'moisture' => '10.9%',
+                    'cupping_score' => '88.5 Q-Grade Specialty',
+                    'packaging' => '60kg Hermetic GrainPro-lined Jute Bags',
+                    'certifications' => ['Specialty Coffee Association Certified', 'Fairtrade'],
+                ],
+                'product_image' => 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=800&q=80',
+                'is_featured' => true,
+            ],
+        ];
+
+        $seededProducts = [];
+        foreach ($productsData as $pd) {
+            $seededProducts[$pd['slug']] = Product::firstOrCreate(['slug' => $pd['slug']], $pd);
+        }
+
+        // 11. Initial Trade Transactions & Payment Records for Demonstration
+        $ghanaBeans = $seededProducts['ghana-premium-fermented-cocoa-beans'];
+        $sumatraCoffee = $seededProducts['sumatra-mandheling-grade-1-green-coffee'];
+
+        // Sample Completed Order 1: Barry Callebaut bought 25 MT Ghana Beans
+        $trx1 = TradeTransaction::firstOrCreate(['transaction_id' => 'TR-2026-0001'], [
+            'transaction_id' => 'TR-2026-0001',
+            'transaction_type' => 'EXPORT',
+            'exporter_id' => $suppliers['GH']->id,
+            'importer_id' => $buyers['DE']->id,
+            'product_id' => $ghanaBeans->id,
+            'quantity' => 25.00,
+            'unit' => 'MT',
+            'unit_price' => 3450.00,
+            'total_price' => 86250.00,
+            'currency' => 'USD',
+            'origin_country_id' => $countries['GH']->id,
+            'destination_country_id' => $countries['DE']->id,
+            'departure_port' => 'Tema Port, Ghana',
+            'destination_port' => 'Port of Hamburg',
+            'transaction_date' => now()->subDays(10),
+            'estimated_arrival_date' => now()->addDays(9),
+            'incoterms' => 'CIF',
+            'transaction_status' => 'Confirmed',
+            'notes' => 'Contract confirmed. Payment received via SWIFT MT700 Irrevocable Letter of Credit.',
+            'user_id' => $customer3->id,
+        ]);
+
+        Payment::firstOrCreate(['payment_number' => 'PAY-2026-00001'], [
+            'payment_number' => 'PAY-2026-00001',
+            'trade_transaction_id' => $trx1->id,
+            'user_id' => $customer3->id,
+            'amount' => 86250.00,
+            'currency' => 'USD',
+            'payment_method' => Payment::METHOD_LC,
+            'payment_channel' => 'SWIFT MT700 Documentary Credit (Deutsche Bank AG)',
+            'payment_status' => Payment::STATUS_SUCCESS,
+            'transaction_reference' => 'CT-GW-LC-8829104',
+            'paid_at' => now()->subDays(10),
+            'expires_at' => now()->addDays(30),
+            'gateway_response' => [
+                'status' => 'SETTLED',
+                'bank' => 'Deutsche Bank AG Hamburg',
+                'lc_number' => 'LC-DE-992104-HAM',
+                'escrow_status' => 'FUNDS_RELEASED_ON_BOARDING',
+            ],
+        ]);
+
+        // Sample Completed Order 2: JDE Peet's bought 18 MT Sumatra Mandheling
+        $trx2 = TradeTransaction::firstOrCreate(['transaction_id' => 'TR-2026-0002'], [
+            'transaction_id' => 'TR-2026-0002',
+            'transaction_type' => 'EXPORT',
+            'exporter_id' => $suppliers['ID']->id,
+            'importer_id' => $buyers['NL']->id,
+            'product_id' => $sumatraCoffee->id,
+            'quantity' => 18.00,
+            'unit' => 'MT',
+            'unit_price' => 5200.00,
+            'total_price' => 93600.00,
+            'currency' => 'USD',
+            'origin_country_id' => $countries['ID']->id,
+            'destination_country_id' => $countries['NL']->id,
+            'departure_port' => 'Belawan Port, Medan',
+            'destination_port' => 'Port of Rotterdam',
+            'transaction_date' => now()->subDays(8),
+            'estimated_arrival_date' => now()->addDays(7),
+            'incoterms' => 'CIF',
+            'transaction_status' => 'Confirmed',
+            'notes' => 'Contract confirmed. Payment cleared via International Virtual Account.',
+            'user_id' => $customer1->id,
+        ]);
+
+        Payment::firstOrCreate(['payment_number' => 'PAY-2026-00002'], [
+            'payment_number' => 'PAY-2026-00002',
+            'trade_transaction_id' => $trx2->id,
+            'user_id' => $customer1->id,
+            'amount' => 93600.00,
+            'currency' => 'USD',
+            'payment_method' => Payment::METHOD_VA,
+            'payment_channel' => 'Bank Mandiri Escrow Virtual Account',
+            'virtual_account_number' => '8820019283749201',
+            'payment_status' => Payment::STATUS_SUCCESS,
+            'transaction_reference' => 'CT-GW-VA-9182374',
+            'paid_at' => now()->subDays(8),
+            'expires_at' => now()->addDays(30),
+            'gateway_response' => [
+                'status' => 'SETTLED',
+                'bank' => 'Bank Mandiri (Persero) Tbk',
+                'va_number' => '8820019283749201',
+                'ref_id' => 'MDR-20261118-0912',
+            ],
+        ]);
     }
 }
+

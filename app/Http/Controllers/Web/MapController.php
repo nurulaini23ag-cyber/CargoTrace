@@ -94,8 +94,11 @@ class MapController extends Controller
             15 => 'KM Priok Sejahtera',
         ];
 
+        // Track anchorage positions to prevent marker label stacking
+        $usedAnchorage = [];
+
         // Map shipments to enriched geographic objects with realistic maritime routes
-        $mapShipments = $shipments->map(function (Shipment $s) use ($user, $vesselDirectory) {
+        $mapShipments = $shipments->map(function (Shipment $s) use ($user, $vesselDirectory, &$usedAnchorage) {
             $currentPos = $s->getCurrentPosition();
             $comm = $s->commodity_type;
 
@@ -118,6 +121,17 @@ class MapController extends Controller
             $traveledPath = $routeData['traveled_path'];
             $remainingPath = $routeData['remaining_path'];
             $locationName = $routeData['location_name'];
+
+            // Slight offset for ships waiting at identical port anchorages to prevent label collision
+            $posKey = round($shipLat, 2) . ':' . round($shipLng, 2);
+            if (isset($usedAnchorage[$posKey])) {
+                $idx = ++$usedAnchorage[$posKey];
+                $angle = $idx * 60;
+                $shipLat = round($shipLat + 0.04 * sin(deg2rad($angle)), 5);
+                $shipLng = round($shipLng + 0.04 * cos(deg2rad($angle)), 5);
+            } else {
+                $usedAnchorage[$posKey] = 0;
+            }
 
             // Customer-Requested Visual Types & Color Coding:
             // 1. Sudah Sampai (Delivered) -> Hijau Emerald (#10b981)

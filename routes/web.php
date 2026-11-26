@@ -3,11 +3,14 @@
 use App\Http\Controllers\Web\AuditLogController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\CarrierController;
+use App\Http\Controllers\Web\CatalogController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\ExceptionController;
 use App\Http\Controllers\Web\LocationController;
 use App\Http\Controllers\Web\MapController;
 use App\Http\Controllers\Web\NotificationController;
+use App\Http\Controllers\Web\OrderController;
+use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\ShipmentController;
 use App\Http\Controllers\Web\SystemSettingController;
 use App\Http\Controllers\Web\TrackingController;
@@ -20,7 +23,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Public Landing, Tracking & Live Global Fleet Map
+// Public Landing, Tracking, Commodity Catalog & Live Global Fleet Map
 Route::get('/', function () {
     if (Illuminate\Support\Facades\Auth::check()) {
         return redirect()->route('dashboard');
@@ -32,6 +35,10 @@ Route::get('/track', [TrackingController::class, 'publicTrack'])->name('tracking
 Route::get('/track/{number}', [TrackingController::class, 'trackNumber'])->name('tracking.search');
 Route::get('/map', [MapController::class, 'index'])->name('map.index');
 Route::get('/api/map/shipments', [MapController::class, 'shipmentsData'])->name('map.data');
+
+// Commodity Catalog (Publicly browseable)
+Route::get('/catalog', [CatalogController::class, 'index'])->name('catalog.index');
+Route::get('/catalog/{slug}', [CatalogController::class, 'show'])->name('catalog.show');
 
 // Guest Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -51,6 +58,17 @@ Route::middleware('auth')->group(function () {
     // Shipments (All authenticated users can browse and view authorized shipments)
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
     Route::get('/shipments/{id}', [ShipmentController::class, 'show'])->name('shipments.show');
+
+    // Customer Commodity Orders & Trade Transactions
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+    Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
+
+    // Payment Gateway Simulator & Commercial Invoice
+    Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+    Route::post('/payments/{payment}/process', [PaymentController::class, 'process'])->name('payments.process');
+    Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
 
     // In-app Notifications & Live Market/Weather Feeds
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

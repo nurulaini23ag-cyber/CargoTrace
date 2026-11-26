@@ -88,6 +88,11 @@ class User extends Authenticatable
         return $this->hasMany(TradeTransaction::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public function shipments(): HasMany
     {
         return $this->hasMany(Shipment::class, 'customer_id');

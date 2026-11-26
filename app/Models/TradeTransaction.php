@@ -72,6 +72,11 @@ class TradeTransaction extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class, 'trade_transaction_id');
+    }
+
     public function shipment(): HasOne
     {
         return $this->hasOne(Shipment::class, 'trade_transaction_id');
@@ -88,6 +93,15 @@ class TradeTransaction extends Model
             }
             if (empty($model->total_price) && $model->quantity && $model->unit_price) {
                 $model->total_price = $model->quantity * $model->unit_price;
+            }
+            if (empty($model->transaction_date)) {
+                $model->transaction_date = now();
+            }
+            if (empty($model->estimated_arrival_date)) {
+                $model->estimated_arrival_date = now()->addDays(16);
+            }
+            if (empty($model->incoterms)) {
+                $model->incoterms = 'CIF';
             }
         });
 

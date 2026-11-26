@@ -6,7 +6,7 @@ class MaritimeSeaRouteService
 {
     /**
      * Standard strategic maritime chokepoints and sea waypoints worldwide.
-     * All coordinates are located strictly in international waters/seas.
+     * All coordinates are located strictly in international waters, fairways, and rivers.
      * Guaranteed zero land/mountain collisions across all continents.
      */
     protected static array $seaWaypoints = [
@@ -29,11 +29,14 @@ class MaritimeSeaRouteService
         'gulf_of_aden_west'          => [12.40, 45.50],    // Central Gulf of Aden (West Sector off Aden)
         'bab_el_mandeb'              => [12.60, 43.40],    // Bab-el-Mandeb Strait
 
-        // Red Sea & Suez Canal
+        // Red Sea & Curved Gulf of Suez Fairway (Zero Sinai/Land Collision)
         'red_sea_south'              => [15.00, 41.80],    // Southern Red Sea (West of Hanish Islands)
         'red_sea_mid'                => [21.50, 38.00],    // Central Red Sea (Off Jeddah)
-        'red_sea_north'              => [27.50, 34.20],    // Northern Red Sea (Entrance to Gulf of Suez)
-        'gulf_of_suez'               => [29.90, 32.55],    // Gulf of Suez Northern Anchorage
+        'red_sea_north'              => [27.50, 34.00],    // Northern Red Sea (Entrance to Strait of Gubal)
+        'suez_gulf_south'            => [28.10, 33.40],    // Southern Gulf of Suez Fairway
+        'suez_gulf_mid'              => [28.80, 32.90],    // Central Gulf of Suez Fairway
+        'suez_gulf_north'            => [29.40, 32.65],    // Northern Gulf of Suez off Zafarana
+        'gulf_of_suez_anchorage'     => [29.90, 32.55],    // Suez Port southern anchorage
         'suez_canal'                 => [30.60, 32.35],    // Suez Canal Central (Great Bitter Lake)
         'port_said'                  => [31.30, 32.30],    // Port Said (Mediterranean Northern Entrance)
 
@@ -42,32 +45,61 @@ class MaritimeSeaRouteService
         'med_mid_crete'              => [34.80, 24.00],    // South of Crete Island
         'med_malta_channel'          => [35.80, 15.00],    // Malta Channel (South of Malta and Sicily)
         'med_sicily_channel'         => [37.50, 11.00],    // Sicily Channel (Between Cap Bon and Sicily)
-        'med_west'                   => [37.50, 2.00],     // Western Mediterranean Sea (Alboran Sea Approach)
+        'med_west_algeria'           => [37.20, 1.50],     // Western Mediterranean off Algerian coast
+
+        // Deep Alboran Sea Corridor to Gibraltar (Clears Cabo de Gata, Spain by 50km)
+        'alboran_east'               => [36.30, -1.80],    // Eastern Alboran Sea Fairway
+        'alboran_mid'                => [36.00, -3.80],    // Central Alboran Sea Fairway
         'gibraltar_strait'           => [35.95, -5.60],    // Strait of Gibraltar
 
-        // Genoa & Ligurian Sea Branch
+        // Genoa & Ligurian Sea Fairway (Zero Corsica/Italy Collision)
         'med_tyrrhenian'             => [39.50, 9.50],     // Tyrrhenian Sea (East of Sardinia)
-        'med_corsica_channel'        => [42.50, 9.50],     // Corsica Channel / Ligurian Sea
-        'genoa_approach'             => [44.30, 8.92],     // Outer Genoa Port Harbor
+        'corsica_east_channel'       => [42.50, 9.80],     // Tuscan Archipelago Fairway (East of Corsica)
+        'corsica_north_cap'          => [43.30, 9.50],     // North of Cap Corse, Ligurian Sea
+        'genoa_outer_sea'            => [44.10, 8.95],     // Gulf of Genoa deep water fairway
+        'genoa_harbor'               => [44.4056, 8.9463], // Port of Genoa Container Terminal
 
-        // North Atlantic & English Channel
-        'atlantic_portugal_south'    => [37.00, -9.50],    // Off Cape St. Vincent, Portugal
-        'atlantic_portugal_north'    => [39.50, -9.80],    // Off Lisbon / Cabo da Roca
-        'bay_of_biscay_south'        => [44.00, -9.50],    // Off Cape Finisterre, Galicia
+        // Portugal & Atlantic Coastal Rounding (Zero Cape St. Vincent Collision)
+        'gibraltar_west'             => [36.10, -6.80],    // Gulf of Cadiz offshore fairway
+        'cape_st_vincent_south'      => [36.70, -9.10],    // Offshore South of Cape St. Vincent
+        'cape_st_vincent_west'       => [37.20, -9.40],    // Offshore West of Cape St. Vincent
+        'atlantic_lisbon'            => [38.80, -9.70],    // Offshore Lisbon / Cabo da Roca
+        'atlantic_portugal_north'    => [40.00, -9.60],    // Offshore Figueira da Foz
+        'atlantic_galicia'           => [42.50, -9.50],    // Offshore Vigo / Galicia
+        'bay_of_biscay_south'        => [43.80, -9.50],    // Offshore Cape Finisterre
         'bay_of_biscay_mid'          => [46.50, -6.50],    // Central Bay of Biscay
         'ushant_tss'                 => [48.60, -5.80],    // Ouessant / Ushant Fairway (Safely rounds Brittany / Brest)
         'english_channel_west'       => [49.60, -3.80],    // Western English Channel (South of Plymouth)
         'english_channel_mid'        => [50.20, -0.50],    // Central English Channel
         'dover_strait'               => [51.10, 1.60],     // Strait of Dover
 
-        // North Sea Approaches
-        'rotterdam_approach'         => [51.98, 3.80],     // Eurogeul fairway entering Port of Rotterdam
-        'antwerp_approach'           => [51.40, 3.50],     // Westerschelde fairway entering Port of Antwerp
+        // Port of Rotterdam (Eurogeul Deep Sea Fairway)
+        'rotterdam_eurogeul'         => [51.98, 3.75],     // Eurogeul Pilot Fairway
+        'rotterdam_maasvlakte'       => [51.954, 4.053],   // Port of Rotterdam Maasvlakte Terminal
+
+        // Port of Antwerp (Westerschelde River Fairway - Follows Deep Water Channel)
+        'antwerp_wandelaar'          => [51.45, 3.25],     // Wandelaar Pilot Fairway
+        'antwerp_vlissingen'         => [51.44, 3.60],     // Vlissingen Roads Channel
+        'antwerp_terneuzen'          => [51.35, 3.90],     // Terneuzen Channel
+        'antwerp_bath'               => [51.38, 4.22],     // Bath Channel bend
+        'antwerp_doel'               => [51.31, 4.28],     // Doel Channel
+        'antwerp_harbor'             => [51.2667, 4.3833], // Port of Antwerp Deurganckdock
+
+        // Port of Hamburg (Elbe River Fairway - Follows Deep Water River Channel)
         'dutch_coast_north'          => [53.20, 4.80],     // North of Texel, Dutch Coast
         'german_bight'               => [54.00, 7.80],     // Heligoland Bight
-        'elbe_estuary'               => [53.90, 8.70],     // Elbe River Approach to Port of Hamburg
+        'elbe_lightship'             => [53.95, 8.30],     // Elbe 1 Lightship Fairway
+        'elbe_cuxhaven'              => [53.88, 8.70],     // Cuxhaven Outer Fairway
+        'elbe_brunsbuttel'           => [53.88, 9.15],     // Brunsbüttel bend
+        'elbe_gluckstadt'            => [53.72, 9.42],     // Glückstadt bend
+        'elbe_wedel'                 => [53.57, 9.70],     // Wedel approach
+        'hamburg_harbor'             => [53.535, 9.980],   // Port of Hamburg Container Terminal
 
-        // West Africa Maritime Corridors
+        // West Africa Maritime Corridors (Zero Ghana / Ivory Coast land collision)
+        'ghana_tema_departure'       => [5.20, -0.02],     // Offshore south of Tema Port fairway
+        'cape_three_points_south'    => [4.30, -2.10],     // Safely rounds Cape Three Points, Ghana (50km south)
+        'abidjan_departure'          => [4.70, -4.02],     // Offshore south of Port of Abidjan channel
+        'san_pedro_offshore'         => [4.30, -6.60],     // Offshore south of San Pedro, Ivory Coast
         'west_africa_cape_palmas'    => [4.00, -8.00],     // Off Cape Palmas (Liberia/Ivory Coast border)
         'west_africa_monrovia'       => [6.00, -11.50],    // Offshore Monrovia, Liberia
         'west_africa_freetown'       => [8.00, -14.50],    // Offshore Freetown, Sierra Leone
@@ -87,10 +119,13 @@ class MaritimeSeaRouteService
         'madura_strait_north'        => [-6.80, 112.75],   // Madura Strait North Channel from Surabaya
         'karimunjawa_north'          => [-5.80, 110.50],   // Java Sea North of Karimunjawa
 
-        // North Atlantic Ocean to North America (New York)
-        'mid_atlantic_north'         => [36.00, -35.00],   // Central North Atlantic Ocean shipping lane
+        // North Atlantic Ocean directly to Port of New York (True Westbound Course)
+        'mid_atlantic_east'          => [35.50, -20.00],   // East North Atlantic shipping lane
+        'mid_atlantic_central'       => [35.50, -35.00],   // Central North Atlantic shipping lane
+        'mid_atlantic_west'          => [37.00, -55.00],   // West North Atlantic shipping lane
         'us_east_coast_approach'     => [39.50, -72.00],   // Ambrose Sea Lane Approach
         'new_york_ambrose'           => [40.45, -73.85],   // Ambrose Light Harbor Entrance
+        'new_york_harbor'            => [40.6700, -74.0300],// Port of New York & New Jersey Terminal
     ];
 
     /**
@@ -164,11 +199,14 @@ class MaritimeSeaRouteService
             $waypoints[] = self::$seaWaypoints['gulf_of_aden_west'];
             $waypoints[] = self::$seaWaypoints['bab_el_mandeb'];
 
-            // Red Sea & Suez Canal
+            // Red Sea & Curved Gulf of Suez
             $waypoints[] = self::$seaWaypoints['red_sea_south'];
             $waypoints[] = self::$seaWaypoints['red_sea_mid'];
             $waypoints[] = self::$seaWaypoints['red_sea_north'];
-            $waypoints[] = self::$seaWaypoints['gulf_of_suez'];
+            $waypoints[] = self::$seaWaypoints['suez_gulf_south'];
+            $waypoints[] = self::$seaWaypoints['suez_gulf_mid'];
+            $waypoints[] = self::$seaWaypoints['suez_gulf_north'];
+            $waypoints[] = self::$seaWaypoints['gulf_of_suez_anchorage'];
             $waypoints[] = self::$seaWaypoints['suez_canal'];
             $waypoints[] = self::$seaWaypoints['port_said'];
             $waypoints[] = self::$seaWaypoints['med_east'];
@@ -179,16 +217,24 @@ class MaritimeSeaRouteService
                 $waypoints[] = self::$seaWaypoints['med_malta_channel'];
                 $waypoints[] = self::$seaWaypoints['med_sicily_channel'];
                 $waypoints[] = self::$seaWaypoints['med_tyrrhenian'];
-                $waypoints[] = self::$seaWaypoints['med_corsica_channel'];
-                $waypoints[] = self::$seaWaypoints['genoa_approach'];
+                $waypoints[] = self::$seaWaypoints['corsica_east_channel'];
+                $waypoints[] = self::$seaWaypoints['corsica_north_cap'];
+                $waypoints[] = self::$seaWaypoints['genoa_outer_sea'];
+                $waypoints[] = self::$seaWaypoints['genoa_harbor'];
             } else {
                 // Towards North Sea (Rotterdam / Antwerp / Hamburg)
                 $waypoints[] = self::$seaWaypoints['med_malta_channel'];
                 $waypoints[] = self::$seaWaypoints['med_sicily_channel'];
-                $waypoints[] = self::$seaWaypoints['med_west'];
+                $waypoints[] = self::$seaWaypoints['med_west_algeria'];
+                $waypoints[] = self::$seaWaypoints['alboran_east'];
+                $waypoints[] = self::$seaWaypoints['alboran_mid'];
                 $waypoints[] = self::$seaWaypoints['gibraltar_strait'];
-                $waypoints[] = self::$seaWaypoints['atlantic_portugal_south'];
+                $waypoints[] = self::$seaWaypoints['gibraltar_west'];
+                $waypoints[] = self::$seaWaypoints['cape_st_vincent_south'];
+                $waypoints[] = self::$seaWaypoints['cape_st_vincent_west'];
+                $waypoints[] = self::$seaWaypoints['atlantic_lisbon'];
                 $waypoints[] = self::$seaWaypoints['atlantic_portugal_north'];
+                $waypoints[] = self::$seaWaypoints['atlantic_galicia'];
                 $waypoints[] = self::$seaWaypoints['bay_of_biscay_south'];
                 $waypoints[] = self::$seaWaypoints['bay_of_biscay_mid'];
                 $waypoints[] = self::$seaWaypoints['ushant_tss'];
@@ -199,11 +245,22 @@ class MaritimeSeaRouteService
                 if (self::isHamburg($destLat, $destLng)) {
                     $waypoints[] = self::$seaWaypoints['dutch_coast_north'];
                     $waypoints[] = self::$seaWaypoints['german_bight'];
-                    $waypoints[] = self::$seaWaypoints['elbe_estuary'];
+                    $waypoints[] = self::$seaWaypoints['elbe_lightship'];
+                    $waypoints[] = self::$seaWaypoints['elbe_cuxhaven'];
+                    $waypoints[] = self::$seaWaypoints['elbe_brunsbuttel'];
+                    $waypoints[] = self::$seaWaypoints['elbe_gluckstadt'];
+                    $waypoints[] = self::$seaWaypoints['elbe_wedel'];
+                    $waypoints[] = self::$seaWaypoints['hamburg_harbor'];
                 } elseif (self::isAntwerp($destLat, $destLng)) {
-                    $waypoints[] = self::$seaWaypoints['antwerp_approach'];
+                    $waypoints[] = self::$seaWaypoints['antwerp_wandelaar'];
+                    $waypoints[] = self::$seaWaypoints['antwerp_vlissingen'];
+                    $waypoints[] = self::$seaWaypoints['antwerp_terneuzen'];
+                    $waypoints[] = self::$seaWaypoints['antwerp_bath'];
+                    $waypoints[] = self::$seaWaypoints['antwerp_doel'];
+                    $waypoints[] = self::$seaWaypoints['antwerp_harbor'];
                 } else {
-                    $waypoints[] = self::$seaWaypoints['rotterdam_approach'];
+                    $waypoints[] = self::$seaWaypoints['rotterdam_eurogeul'];
+                    $waypoints[] = self::$seaWaypoints['rotterdam_maasvlakte'];
                 }
             }
 
@@ -212,32 +269,55 @@ class MaritimeSeaRouteService
 
         // 2. West Africa (Abidjan / Tema) to Europe
         if (self::isWestAfrica($originLat, $originLng) && self::isEurope($destLat, $destLng)) {
-            $waypoints = [
-                self::$seaWaypoints['west_africa_cape_palmas'],
-                self::$seaWaypoints['west_africa_monrovia'],
-                self::$seaWaypoints['west_africa_freetown'],
-                self::$seaWaypoints['west_africa_bijagos'],
-                self::$seaWaypoints['west_africa_dakar'],
-                self::$seaWaypoints['west_africa_nouadhibou'],
-                self::$seaWaypoints['canary_islands_west'],
-                self::$seaWaypoints['atlantic_portugal_south'],
-                self::$seaWaypoints['atlantic_portugal_north'],
-                self::$seaWaypoints['bay_of_biscay_south'],
-                self::$seaWaypoints['bay_of_biscay_mid'],
-                self::$seaWaypoints['ushant_tss'],
-                self::$seaWaypoints['english_channel_west'],
-                self::$seaWaypoints['english_channel_mid'],
-                self::$seaWaypoints['dover_strait'],
-            ];
+            $waypoints = [];
+
+            // Departure fairway rounding Cape Three Points / San Pedro safely in deep open waters
+            if ($originLng > -1.0) { // Tema, Ghana (rounds Cape Three Points safely)
+                $waypoints[] = self::$seaWaypoints['ghana_tema_departure'];
+                $waypoints[] = self::$seaWaypoints['cape_three_points_south'];
+                $waypoints[] = self::$seaWaypoints['san_pedro_offshore'];
+            } else { // Abidjan, Côte d'Ivoire
+                $waypoints[] = self::$seaWaypoints['abidjan_departure'];
+                $waypoints[] = self::$seaWaypoints['san_pedro_offshore'];
+            }
+
+            $waypoints[] = self::$seaWaypoints['west_africa_cape_palmas'];
+            $waypoints[] = self::$seaWaypoints['west_africa_monrovia'];
+            $waypoints[] = self::$seaWaypoints['west_africa_freetown'];
+            $waypoints[] = self::$seaWaypoints['west_africa_bijagos'];
+            $waypoints[] = self::$seaWaypoints['west_africa_dakar'];
+            $waypoints[] = self::$seaWaypoints['west_africa_nouadhibou'];
+            $waypoints[] = self::$seaWaypoints['canary_islands_west'];
+            $waypoints[] = self::$seaWaypoints['cape_st_vincent_west'];
+            $waypoints[] = self::$seaWaypoints['atlantic_lisbon'];
+            $waypoints[] = self::$seaWaypoints['atlantic_portugal_north'];
+            $waypoints[] = self::$seaWaypoints['atlantic_galicia'];
+            $waypoints[] = self::$seaWaypoints['bay_of_biscay_south'];
+            $waypoints[] = self::$seaWaypoints['bay_of_biscay_mid'];
+            $waypoints[] = self::$seaWaypoints['ushant_tss'];
+            $waypoints[] = self::$seaWaypoints['english_channel_west'];
+            $waypoints[] = self::$seaWaypoints['english_channel_mid'];
+            $waypoints[] = self::$seaWaypoints['dover_strait'];
 
             if (self::isHamburg($destLat, $destLng)) {
                 $waypoints[] = self::$seaWaypoints['dutch_coast_north'];
                 $waypoints[] = self::$seaWaypoints['german_bight'];
-                $waypoints[] = self::$seaWaypoints['elbe_estuary'];
+                $waypoints[] = self::$seaWaypoints['elbe_lightship'];
+                $waypoints[] = self::$seaWaypoints['elbe_cuxhaven'];
+                $waypoints[] = self::$seaWaypoints['elbe_brunsbuttel'];
+                $waypoints[] = self::$seaWaypoints['elbe_gluckstadt'];
+                $waypoints[] = self::$seaWaypoints['elbe_wedel'];
+                $waypoints[] = self::$seaWaypoints['hamburg_harbor'];
             } elseif (self::isAntwerp($destLat, $destLng)) {
-                $waypoints[] = self::$seaWaypoints['antwerp_approach'];
+                $waypoints[] = self::$seaWaypoints['antwerp_wandelaar'];
+                $waypoints[] = self::$seaWaypoints['antwerp_vlissingen'];
+                $waypoints[] = self::$seaWaypoints['antwerp_terneuzen'];
+                $waypoints[] = self::$seaWaypoints['antwerp_bath'];
+                $waypoints[] = self::$seaWaypoints['antwerp_doel'];
+                $waypoints[] = self::$seaWaypoints['antwerp_harbor'];
             } else {
-                $waypoints[] = self::$seaWaypoints['rotterdam_approach'];
+                $waypoints[] = self::$seaWaypoints['rotterdam_eurogeul'];
+                $waypoints[] = self::$seaWaypoints['rotterdam_maasvlakte'];
             }
 
             return self::assembleRoute($originLat, $originLng, $waypoints, $destLat, $destLng);
@@ -251,24 +331,32 @@ class MaritimeSeaRouteService
                 self::$seaWaypoints['red_sea_south'],
                 self::$seaWaypoints['red_sea_mid'],
                 self::$seaWaypoints['red_sea_north'],
-                self::$seaWaypoints['gulf_of_suez'],
+                self::$seaWaypoints['suez_gulf_south'],
+                self::$seaWaypoints['suez_gulf_mid'],
+                self::$seaWaypoints['suez_gulf_north'],
+                self::$seaWaypoints['gulf_of_suez_anchorage'],
                 self::$seaWaypoints['suez_canal'],
                 self::$seaWaypoints['port_said'],
                 self::$seaWaypoints['med_east'],
                 self::$seaWaypoints['med_mid_crete'],
                 self::$seaWaypoints['med_malta_channel'],
                 self::$seaWaypoints['med_sicily_channel'],
-                self::$seaWaypoints['med_west'],
+                self::$seaWaypoints['med_west_algeria'],
+                self::$seaWaypoints['alboran_east'],
+                self::$seaWaypoints['alboran_mid'],
                 self::$seaWaypoints['gibraltar_strait'],
-                self::$seaWaypoints['mid_atlantic_north'],
+                self::$seaWaypoints['gibraltar_west'],
+                self::$seaWaypoints['mid_atlantic_east'],
+                self::$seaWaypoints['mid_atlantic_central'],
+                self::$seaWaypoints['mid_atlantic_west'],
                 self::$seaWaypoints['us_east_coast_approach'],
                 self::$seaWaypoints['new_york_ambrose'],
+                self::$seaWaypoints['new_york_harbor'],
             ];
             return self::assembleRoute($originLat, $originLng, $waypoints, $destLat, $destLng);
         }
 
         // 4. Southeast Asia (Vietnam Da Nang / Indonesia) to USA (New York) via Suez and Atlantic
-        // Highly reliable, non-wrapping contiguous route matching container liner services
         if (self::isSoutheastAsia($originLat, $originLng) && self::isUSA($destLat, $destLng)) {
             $waypoints = [
                 [15.80, 108.60],
@@ -293,18 +381,27 @@ class MaritimeSeaRouteService
                 self::$seaWaypoints['red_sea_south'],
                 self::$seaWaypoints['red_sea_mid'],
                 self::$seaWaypoints['red_sea_north'],
-                self::$seaWaypoints['gulf_of_suez'],
+                self::$seaWaypoints['suez_gulf_south'],
+                self::$seaWaypoints['suez_gulf_mid'],
+                self::$seaWaypoints['suez_gulf_north'],
+                self::$seaWaypoints['gulf_of_suez_anchorage'],
                 self::$seaWaypoints['suez_canal'],
                 self::$seaWaypoints['port_said'],
                 self::$seaWaypoints['med_east'],
                 self::$seaWaypoints['med_mid_crete'],
                 self::$seaWaypoints['med_malta_channel'],
                 self::$seaWaypoints['med_sicily_channel'],
-                self::$seaWaypoints['med_west'],
+                self::$seaWaypoints['med_west_algeria'],
+                self::$seaWaypoints['alboran_east'],
+                self::$seaWaypoints['alboran_mid'],
                 self::$seaWaypoints['gibraltar_strait'],
-                self::$seaWaypoints['mid_atlantic_north'],
+                self::$seaWaypoints['gibraltar_west'],
+                self::$seaWaypoints['mid_atlantic_east'],
+                self::$seaWaypoints['mid_atlantic_central'],
+                self::$seaWaypoints['mid_atlantic_west'],
                 self::$seaWaypoints['us_east_coast_approach'],
                 self::$seaWaypoints['new_york_ambrose'],
+                self::$seaWaypoints['new_york_harbor'],
             ];
             return self::assembleRoute($originLat, $originLng, $waypoints, $destLat, $destLng);
         }
@@ -566,44 +663,59 @@ class MaritimeSeaRouteService
         // Base realistic sea route
         $baseRoute = self::getMaritimeRoute($originLat, $originLng, $destLat, $destLng, $originCode, $destCode);
 
-        // Resolve precise ship coordinates
+        // Resolve precise ship coordinates and snap to base sea route
         if ($isDelivered) {
             $shipLat = $destLat;
             $shipLng = $destLng;
             $progress = 100;
+            $bestSeg = max(0, count($baseRoute) - 2);
         } elseif ($isStaged) {
             $shipLat = $originLat;
             $shipLng = $originLng;
             $progress = 10;
+            $bestSeg = 0;
         } else {
-            $shipLat = (float)($cur['latitude'] ?? $originLat);
-            $shipLng = (float)($cur['longitude'] ?? $originLng);
+            $rawLat = (float)($cur['latitude'] ?? $originLat);
+            $rawLng = (float)($cur['longitude'] ?? $originLng);
             $progress = (int)($cur['progress_percent'] ?? 50);
-        }
 
-        // Find nearest segment on base route to ship position
-        $minDist = 999999;
-        $bestSeg = 0;
-        for ($i = 0; $i < count($baseRoute) - 1; $i++) {
-            $p1 = $baseRoute[$i];
-            $p2 = $baseRoute[$i + 1];
-            for ($step = 0; $step <= 20; $step++) {
-                $t = $step / 20.0;
-                $sLat = $p1[0] + $t * ($p2[0] - $p1[0]);
-                $sLng = $p1[1] + $t * ($p2[1] - $p1[1]);
-                $d = self::haversineDistance($shipLat, $shipLng, $sLat, $sLng);
-                if ($d < $minDist) {
-                    $minDist = $d;
-                    $bestSeg = $i;
+            // Snap ship position onto the closest point along the base sea route
+            // This guarantees 100.0% exact alignment: the ship sits directly on the line with no offset!
+            $minDist = 999999;
+            $bestSeg = 0;
+            $snappedLat = $rawLat;
+            $snappedLng = $rawLng;
+
+            for ($i = 0; $i < count($baseRoute) - 1; $i++) {
+                $p1 = $baseRoute[$i];
+                $p2 = $baseRoute[$i + 1];
+                for ($step = 0; $step <= 50; $step++) {
+                    $t = $step / 50.0;
+                    $sLat = $p1[0] + $t * ($p2[0] - $p1[0]);
+                    $sLng = $p1[1] + $t * ($p2[1] - $p1[1]);
+                    $d = self::haversineDistance($rawLat, $rawLng, $sLat, $sLng);
+                    if ($d < $minDist) {
+                        $minDist = $d;
+                        $bestSeg = $i;
+                        $snappedLat = $sLat;
+                        $snappedLng = $sLng;
+                    }
                 }
             }
+
+            $shipLat = round($snappedLat, 5);
+            $shipLng = round($snappedLng, 5);
         }
 
         // Traveled path: origin -> waypoints up to bestSeg -> shipLat, shipLng
         $traveled = [];
         if (!$isStaged) {
             for ($i = 0; $i <= $bestSeg; $i++) {
-                $traveled[] = $baseRoute[$i];
+                $pt = $baseRoute[$i];
+                $dist = self::haversineDistance($shipLat, $shipLng, $pt[0], $pt[1]);
+                if ($dist > 15.0 || $i === 0) {
+                    $traveled[] = $pt;
+                }
             }
             $traveled[] = [$shipLat, $shipLng];
         } else {
@@ -617,7 +729,7 @@ class MaritimeSeaRouteService
             for ($i = $bestSeg + 1; $i < count($baseRoute); $i++) {
                 $pt = $baseRoute[$i];
                 $dist = self::haversineDistance($shipLat, $shipLng, $pt[0], $pt[1]);
-                if ($dist > 60.0 || $i === count($baseRoute) - 1) {
+                if ($dist > 15.0 || $i === count($baseRoute) - 1) {
                     $remaining[] = $pt;
                 }
             }

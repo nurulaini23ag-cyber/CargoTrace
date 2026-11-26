@@ -104,15 +104,15 @@
             </button>
         </div>
 
-        <!-- Route Mode Toggle: All Lines vs Single Focus -->
+        <!-- Route Mode Toggle: Single Focus vs All Lines -->
         <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
-            <button type="button" onclick="toggleRouteMode('ALL')" id="btn-mode-all"
-                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition bg-white text-slate-900 shadow-xs cursor-pointer">
-                🌐 Tampilkan Semua Jalur
-            </button>
             <button type="button" onclick="toggleRouteMode('FOCUS')" id="btn-mode-focus"
+                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition bg-white text-slate-900 shadow-xs cursor-pointer">
+                🎯 Fokus 1 Rute (Rapi & Jelas)
+            </button>
+            <button type="button" onclick="toggleRouteMode('ALL')" id="btn-mode-all"
                     class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition text-slate-600 hover:text-slate-900 cursor-pointer">
-                🎯 Fokus Rute Terpilih
+                🌐 Tampilkan Semua Jalur
             </button>
         </div>
     </div>
@@ -152,25 +152,25 @@
                 </button>
             </div>
 
-            <!-- Active Selected Vessel Notification Toast on Map -->
-            <div id="active-vessel-banner" class="hidden absolute bottom-12 left-4 right-4 z-[1000] bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3 truncate">
-                    <div id="banner-status-icon" class="w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shrink-0 bg-blue-600">
+            <!-- Active Selected Vessel Banner (Floating at Top of Map Canvas) -->
+            <div id="active-vessel-banner" class="hidden absolute top-14 left-3 right-3 z-[1000] bg-slate-900/95 backdrop-blur-md text-white p-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center justify-between gap-3 transition-all duration-300">
+                <div class="flex items-center gap-2.5 truncate">
+                    <div id="banner-status-icon" class="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 bg-blue-600">
                         🚢
                     </div>
                     <div class="truncate">
                         <div class="flex items-center gap-2">
-                            <span id="banner-vessel-name" class="font-black text-sm text-white">MV Nusantara Jaya</span>
-                            <span id="banner-status-badge" class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-500/30 text-blue-300 border border-blue-400/40">
+                            <span id="banner-vessel-name" class="font-black text-xs text-white">MV Nusantara Jaya</span>
+                            <span id="banner-status-badge" class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/30 text-blue-300 border border-blue-400/40">
                                 SEDANG BERLAYAR
                             </span>
                         </div>
-                        <div id="banner-route-text" class="text-xs text-slate-300 mt-0.5 truncate">
+                        <div id="banner-route-text" class="text-[11px] text-slate-300 mt-0.5 truncate font-medium">
                             Pelabuhan Belawan (Medan) &rarr; Port of Rotterdam (Belanda) &bull; Koridor Laut Merah / Terusan Suez
                         </div>
                     </div>
                 </div>
-                <button type="button" onclick="clearActiveVesselFocus()" class="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold shrink-0 cursor-pointer border border-white/20">
+                <button type="button" onclick="clearActiveVesselFocus()" class="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[11px] font-bold shrink-0 cursor-pointer border border-white/20 transition">
                     ✕ Tutup Fokus
                 </button>
             </div>
@@ -302,8 +302,7 @@
 
                         @if(!empty($s['is_signal_offline']))
                         <div class="mt-2 px-2 py-1 bg-amber-50 rounded-lg border border-amber-300 text-amber-900 text-[10px] font-bold flex items-center gap-1.5 shadow-xs">
-                            <span class="text-xs">⚠️</span>
-                            <span class="truncate">{{ $s['signal_label'] ?? 'Sinyal Offline (Last Known Position)' }}</span>
+                            <span class="truncate">{{ $s['signal_label'] ?? '⚠️ Sinyal Offline (Last Known Position)' }}</span>
                         </div>
                         @endif
 
@@ -337,7 +336,7 @@
     const shipmentDestMarkers = {};
     let globalBounds;
     let currentFocusShipmentId = null;
-    let routeDisplayMode = 'ALL'; // 'ALL' (all lines visible by default) or 'FOCUS' (only focused ship)
+    let routeDisplayMode = 'FOCUS'; // Default: 'FOCUS' (clean single-route focus, no visual clutter)
 
     /**
      * Helper to get compass direction from bearing degree
@@ -356,56 +355,12 @@
     }
 
     /**
-     * Splits coordinate paths at the 180° antimeridian (Pacific Ocean)
-     * into multi-polyline segments so lines NEVER cut across Africa or Eurasia.
+     * Pass clean coordinate paths directly (all CargoTrace maritime routes stay strictly
+     * between -75°W and +115°E via Suez/Gibraltar, zero crossing of 180° antimeridian).
      */
-    function splitPathAtAntimeridian(coords) {
-        if (!coords || !Array.isArray(coords) || coords.length < 2) return coords;
-
-        const parts = [];
-        let currentPart = [coords[0]];
-
-        for (let i = 0; i < coords.length - 1; i++) {
-            const p1 = coords[i];
-            const p2 = coords[i + 1];
-            const dLng = p2[1] - p1[1];
-
-            if (Math.abs(dLng) > 180) {
-                // Crossing the 180° antimeridian!
-                const lng1 = p1[1];
-                const lng2 = p2[1];
-                const lat1 = p1[0];
-                const lat2 = p2[0];
-
-                let dist1, dist2, cross1, cross2;
-                if (lng1 > 0) {
-                    dist1 = 180.0 - lng1;
-                    dist2 = lng2 - (-180.0);
-                    cross1 = 180.0;
-                    cross2 = -180.0;
-                } else {
-                    dist1 = lng1 - (-180.0);
-                    dist2 = 180.0 - lng2;
-                    cross1 = -180.0;
-                    cross2 = 180.0;
-                }
-
-                const totalDist = dist1 + dist2;
-                const fraction = totalDist > 0 ? (dist1 / totalDist) : 0.5;
-                const crossLat = lat1 + fraction * (lat2 - lat1);
-
-                currentPart.push([crossLat, cross1]);
-                parts.push(currentPart);
-                currentPart = [[crossLat, cross2]];
-            }
-            currentPart.push(p2);
-        }
-
-        if (currentPart.length > 0) {
-            parts.push(currentPart);
-        }
-
-        return parts.length === 1 ? parts[0] : parts;
+    function sanitizePath(coords) {
+        if (!coords || !Array.isArray(coords) || coords.length < 2) return [];
+        return coords.filter(p => Array.isArray(p) && p.length >= 2 && !isNaN(p[0]) && !isNaN(p[1]));
     }
 
     /**
@@ -533,17 +488,23 @@
         // Update polylines visibility (clean focused line)
         updateRoutePolylinesVisibility();
 
-        // Fly map smoothly to the selected vessel's live location
-        if (s.current_position && s.current_position.latitude && s.current_position.longitude) {
-            fleetMap.flyTo([s.current_position.latitude, s.current_position.longitude], 6);
-        } else if (vesselMarkers[id]) {
-            fleetMap.flyTo(vesselMarkers[id].getLatLng(), 6);
-        }
+        // Fit map bounds to frame this specific shipment's route from Origin [A] -> Ship -> Destination [B]
+        const origMarker = shipmentOriginMarkers[id];
+        const destMarker = shipmentDestMarkers[id];
+        const shipPos = s.current_position;
 
-        // Open popup
-        setTimeout(() => {
-            if (vesselMarkers[id]) vesselMarkers[id].openPopup();
-        }, 800);
+        if (origMarker && destMarker && shipPos && shipPos.latitude && shipPos.longitude) {
+            const voyageBounds = L.latLngBounds([
+                origMarker.getLatLng(),
+                destMarker.getLatLng(),
+                [shipPos.latitude, shipPos.longitude]
+            ]);
+            fleetMap.fitBounds(voyageBounds, { padding: [60, 60], maxZoom: 6 });
+        } else if (shipPos && shipPos.latitude && shipPos.longitude) {
+            fleetMap.flyTo([shipPos.latitude, shipPos.longitude], 5);
+        } else if (vesselMarkers[id]) {
+            fleetMap.flyTo(vesselMarkers[id].getLatLng(), 5);
+        }
     }
 
     function clearActiveVesselFocus() {
@@ -563,7 +524,9 @@
         fleetShipments.forEach(s => {
             const travPoly = shipmentTraveledPolylines[s.id];
             const remPoly = shipmentRemainingPolylines[s.id];
-            if (!travPoly && !remPoly) return;
+            const origMarker = shipmentOriginMarkers[s.id];
+            const destMarker = shipmentDestMarkers[s.id];
+            const vMarker = vesselMarkers[s.id];
 
             const isThisFocused = (currentFocusShipmentId === s.id);
 
@@ -589,11 +552,29 @@
                         remPoly.bringToFront();
                         if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
                     }
+                    if (origMarker) {
+                        origMarker.setZIndexOffset(3500);
+                        if (!fleetMap.hasLayer(origMarker)) origMarker.addTo(fleetMap);
+                    }
+                    if (destMarker) {
+                        destMarker.setZIndexOffset(3500);
+                        if (!fleetMap.hasLayer(destMarker)) destMarker.addTo(fleetMap);
+                    }
+                    if (vMarker) {
+                        vMarker.setZIndexOffset(2500);
+                        vMarker.setOpacity(1.0);
+                    }
                 } else {
                     if (routeDisplayMode === 'FOCUS') {
-                        // In FOCUS mode: hide non-selected lines
+                        // In FOCUS mode: hide non-selected lines and non-selected origin/destination pins
                         if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
                         if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
+                        if (origMarker && fleetMap.hasLayer(origMarker)) fleetMap.removeLayer(origMarker);
+                        if (destMarker && fleetMap.hasLayer(destMarker)) fleetMap.removeLayer(destMarker);
+                        if (vMarker) {
+                            vMarker.setZIndexOffset(100);
+                            vMarker.setOpacity(0.35); // Dim non-selected ships so focused route dominates
+                        }
                     } else {
                         // In ALL mode: keep other vessels visible as subtle background routes
                         if (travPoly) {
@@ -613,10 +594,16 @@
                             });
                             if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
                         }
+                        if (origMarker && !fleetMap.hasLayer(origMarker)) origMarker.addTo(fleetMap);
+                        if (destMarker && !fleetMap.hasLayer(destMarker)) destMarker.addTo(fleetMap);
+                        if (vMarker) {
+                            vMarker.setZIndexOffset(200);
+                            vMarker.setOpacity(1.0);
+                        }
                     }
                 }
             } else {
-                // Overview mode (no single focus): ALWAYS SHOW ALL REAL MARITIME ROUTES
+                // Overview mode (no single focus): show all real maritime routes
                 if (travPoly) {
                     travPoly.setStyle({
                         opacity: 0.8,
@@ -633,6 +620,12 @@
                         dashArray: s.status_type === 'DELIVERED' ? null : '6, 8'
                     });
                     if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
+                }
+                if (origMarker && !fleetMap.hasLayer(origMarker)) origMarker.addTo(fleetMap);
+                if (destMarker && !fleetMap.hasLayer(destMarker)) destMarker.addTo(fleetMap);
+                if (vMarker) {
+                    vMarker.setZIndexOffset(300);
+                    vMarker.setOpacity(1.0);
                 }
             }
         });
@@ -737,11 +730,11 @@
 
             // Draw Real-time Traveled Path (Solid line: Origin -> Current Ship Position)
             if (s.traveled_path && s.traveled_path.length >= 2) {
-                const travPoly = L.polyline(splitPathAtAntimeridian(s.traveled_path), {
+                const travPoly = L.polyline(sanitizePath(s.traveled_path), {
                     color: s.status_color,
                     weight: 3.5,
                     opacity: 0.8
-                }).addTo(fleetMap);
+                });
 
                 travPoly.on('click', () => {
                     selectShipmentRoute(s.id);
@@ -752,12 +745,12 @@
 
             // Draw Real-time Remaining Path (Dashed line: Current Ship Position -> Destination)
             if (s.remaining_path && s.remaining_path.length >= 2) {
-                const remPoly = L.polyline(splitPathAtAntimeridian(s.remaining_path), {
+                const remPoly = L.polyline(sanitizePath(s.remaining_path), {
                     color: s.status_color,
                     weight: 2.8,
                     opacity: 0.6,
                     dashArray: s.status_type === 'DELIVERED' ? null : '6, 8'
-                }).addTo(fleetMap);
+                });
 
                 remPoly.on('click', () => {
                     selectShipmentRoute(s.id);
@@ -771,11 +764,14 @@
                 shipmentPolylines[s.id] = shipmentTraveledPolylines[s.id] || shipmentRemainingPolylines[s.id];
             }
 
-            // Origin Port Marker (A)
+            // Origin Port Marker (A) with high-visibility badge
             if (origin.lat && origin.lng) {
                 const originPinHtml = `
-                    <div class="relative flex items-center justify-center cursor-pointer" style="width: 24px; height: 30px;">
-                        <svg width="24" height="30" viewBox="0 0 24 30" fill="none">
+                    <div class="relative flex flex-col items-center cursor-pointer pointer-events-auto" style="width: 130px; height: 50px;">
+                        <div class="px-2 py-0.5 rounded-full bg-emerald-700 text-white font-black text-[9px] shadow-md border border-white whitespace-nowrap mb-0.5">
+                            🟢 [A] ASAL: ${origin.city}
+                        </div>
+                        <svg width="20" height="25" viewBox="0 0 24 30" fill="none">
                             <path d="M12 0C5.37 0 0 5.37 0 12C0 21 12 30 12 30C12 30 24 21 24 12C24 5.37 18.63 0 12 0Z" fill="#10b981"/>
                             <circle cx="12" cy="11" r="5" fill="#ffffff"/>
                             <text x="12" y="14" font-size="8" font-weight="900" text-anchor="middle" fill="#065f46">A</text>
@@ -786,9 +782,9 @@
                     icon: L.divIcon({
                         html: originPinHtml,
                         className: 'gmap-origin-pin',
-                        iconSize: [24, 30],
-                        iconAnchor: [12, 30],
-                        popupAnchor: [0, -30]
+                        iconSize: [130, 50],
+                        iconAnchor: [65, 48],
+                        popupAnchor: [0, -48]
                     }),
                     zIndexOffset: 300
                 }).addTo(fleetMap).bindPopup(`
@@ -803,11 +799,14 @@
                 globalBounds.extend([origin.lat, origin.lng]);
             }
 
-            // Destination Port Marker (B)
+            // Destination Port Marker (B) with high-visibility badge
             if (dest.lat && dest.lng) {
                 const destPinHtml = `
-                    <div class="relative flex items-center justify-center cursor-pointer" style="width: 24px; height: 30px;">
-                        <svg width="24" height="30" viewBox="0 0 24 30" fill="none">
+                    <div class="relative flex flex-col items-center cursor-pointer pointer-events-auto" style="width: 130px; height: 50px;">
+                        <div class="px-2 py-0.5 rounded-full bg-rose-700 text-white font-black text-[9px] shadow-md border border-white whitespace-nowrap mb-0.5">
+                            🔴 [B] TUJUAN: ${dest.city}
+                        </div>
+                        <svg width="20" height="25" viewBox="0 0 24 30" fill="none">
                             <path d="M12 0C5.37 0 0 5.37 0 12C0 21 12 30 12 30C12 30 24 21 24 12C24 5.37 18.63 0 12 0Z" fill="#ef4444"/>
                             <circle cx="12" cy="11" r="5" fill="#ffffff"/>
                             <text x="12" y="14" font-size="8" font-weight="900" text-anchor="middle" fill="#991b1b">B</text>
@@ -818,9 +817,9 @@
                     icon: L.divIcon({
                         html: destPinHtml,
                         className: 'gmap-dest-pin',
-                        iconSize: [24, 30],
-                        iconAnchor: [12, 30],
-                        popupAnchor: [0, -30]
+                        iconSize: [130, 50],
+                        iconAnchor: [65, 48],
+                        popupAnchor: [0, -48]
                     }),
                     zIndexOffset: 300
                 }).addTo(fleetMap).bindPopup(`
@@ -984,7 +983,7 @@
                     </div>
                 `;
 
-                vMarker.bindPopup(infoWindowHtml);
+                vMarker.bindPopup(infoWindowHtml, { autoPan: false, maxWidth: 300 });
                 vMarker.on('click', () => {
                     selectShipmentRoute(s.id);
                 });
@@ -994,22 +993,21 @@
             }
         });
 
-        // 4. Initial Route Lines Visibility based on Mode (Clean FOCUS mode by default)
-        updateRoutePolylinesVisibility();
-
-        // Fit map bounds
-        if (globalBounds && globalBounds.isValid()) {
-            fleetMap.fitBounds(globalBounds, { padding: [50, 50], maxZoom: 5 });
+        // 4. Initial Route Lines Visibility: Auto-focus on first shipment by default so the map opens with a clean, focused single route
+        if (fleetShipments && fleetShipments.length > 0) {
+            selectShipmentRoute(fleetShipments[0].id);
+        } else {
+            updateRoutePolylinesVisibility();
+            if (globalBounds && globalBounds.isValid()) {
+                fleetMap.fitBounds(globalBounds, { padding: [50, 50], maxZoom: 5 });
+            }
         }
 
         setTimeout(() => {
             if (fleetMap) {
                 fleetMap.invalidateSize();
-                if (globalBounds && globalBounds.isValid()) {
-                    fleetMap.fitBounds(globalBounds, { padding: [40, 40], maxZoom: 5 });
-                }
             }
-        }, 250);
+        }, 300);
 
         // Search bar handler
         const searchInput = document.getElementById('map-search-bar');
