@@ -359,6 +359,59 @@
     }
 
     /**
+     * Splits coordinate paths at the 180° antimeridian (Pacific Ocean)
+     * into multi-polyline segments so lines NEVER cut across Africa or Eurasia.
+     */
+    function splitPathAtAntimeridian(coords) {
+        if (!coords || !Array.isArray(coords) || coords.length < 2) return coords;
+
+        const parts = [];
+        let currentPart = [coords[0]];
+
+        for (let i = 0; i < coords.length - 1; i++) {
+            const p1 = coords[i];
+            const p2 = coords[i + 1];
+            const dLng = p2[1] - p1[1];
+
+            if (Math.abs(dLng) > 180) {
+                // Crossing the 180° antimeridian!
+                const lng1 = p1[1];
+                const lng2 = p2[1];
+                const lat1 = p1[0];
+                const lat2 = p2[0];
+
+                let dist1, dist2, cross1, cross2;
+                if (lng1 > 0) {
+                    dist1 = 180.0 - lng1;
+                    dist2 = lng2 - (-180.0);
+                    cross1 = 180.0;
+                    cross2 = -180.0;
+                } else {
+                    dist1 = lng1 - (-180.0);
+                    dist2 = 180.0 - lng2;
+                    cross1 = -180.0;
+                    cross2 = 180.0;
+                }
+
+                const totalDist = dist1 + dist2;
+                const fraction = totalDist > 0 ? (dist1 / totalDist) : 0.5;
+                const crossLat = lat1 + fraction * (lat2 - lat1);
+
+                currentPart.push([crossLat, cross1]);
+                parts.push(currentPart);
+                currentPart = [[crossLat, cross2]];
+            }
+            currentPart.push(p2);
+        }
+
+        if (currentPart.length > 0) {
+            parts.push(currentPart);
+        }
+
+        return parts.length === 1 ? parts[0] : parts;
+    }
+
+    /**
      * Switch Base Tile Layer (Google/OSM, Satelit, Maritim)
      */
     function switchBaseMap(layerKey) {
@@ -483,11 +536,9 @@
         // Update polylines visibility (clean focused line)
         updateRoutePolylinesVisibility();
 
-        // Fit map bounds to encompass the full voyage of the selected shipment
-        if (s.sea_route && s.sea_route.length >= 2) {
-            const voyageBounds = L.latLngBounds();
-            s.sea_route.forEach(pt => voyageBounds.extend(pt));
-            fleetMap.fitBounds(voyageBounds, { padding: [60, 60], maxZoom: 6 });
+        // Fly map smoothly to the selected vessel's live location
+        if (s.current_position && s.current_position.latitude && s.current_position.longitude) {
+            fleetMap.flyTo([s.current_position.latitude, s.current_position.longitude], 6);
         } else if (vesselMarkers[id]) {
             fleetMap.flyTo(vesselMarkers[id].getLatLng(), 6);
         }
@@ -689,7 +740,7 @@
 
             // Draw Real-time Traveled Path (Solid line: Origin -> Current Ship Position)
             if (s.traveled_path && s.traveled_path.length >= 2) {
-                const travPoly = L.polyline(s.traveled_path, {
+                const travPoly = L.polyline(splitPathAtAntimeridian(s.traveled_path), {
                     color: s.status_color,
                     weight: 3.5,
                     opacity: 0.8
@@ -704,7 +755,7 @@
 
             // Draw Real-time Remaining Path (Dashed line: Current Ship Position -> Destination)
             if (s.remaining_path && s.remaining_path.length >= 2) {
-                const remPoly = L.polyline(s.remaining_path, {
+                const remPoly = L.polyline(splitPathAtAntimeridian(s.remaining_path), {
                     color: s.status_color,
                     weight: 2.8,
                     opacity: 0.6,
