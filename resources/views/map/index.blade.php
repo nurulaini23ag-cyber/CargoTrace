@@ -940,7 +940,6 @@
                 });
 
                 // Rich InfoWindow Popup
-                const compassDir = getCompassDirection(pos.bearing);
                 const infoWindowHtml = `
                     <div class="p-2 font-sans text-xs min-w-[280px]">
                         <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
