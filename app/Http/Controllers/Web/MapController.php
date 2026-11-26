@@ -156,12 +156,21 @@ class MapController extends Controller
                 $shipLat = (float) $currentPos['latitude'];
                 $shipLng = (float) $currentPos['longitude'];
                 $shipBearing = 270;
+                $segIdx = 0;
             } else {
-                [$shipLat, $shipLng, $shipBearing] = MaritimeSeaRouteService::interpolatePositionAlongRoute(
+                [$shipLat, $shipLng, $shipBearing, $segIdx] = MaritimeSeaRouteService::interpolatePositionAlongRoute(
                     $seaRouteCoords,
                     $progressPercent
                 );
             }
+
+            // Split route into traveled path and remaining path
+            $splitRoute = MaritimeSeaRouteService::splitRouteAtPosition(
+                $seaRouteCoords,
+                $shipLat,
+                $shipLng,
+                $segIdx
+            );
 
             // Assign distinct vessel name
             $vesselName = ($s->vessel_carrier && $s->vessel_carrier !== 'MV Maersk Semarang')
@@ -232,6 +241,8 @@ class MapController extends Controller
                     'is_west_sector' => (bool) ($currentPos['is_west_sector'] ?? false),
                 ],
                 'sea_route' => $seaRouteCoords,
+                'traveled_path' => $splitRoute['traveled'],
+                'remaining_path' => $splitRoute['remaining'],
                 'detail_url' => route('shipments.show', $s->id),
             ];
         });

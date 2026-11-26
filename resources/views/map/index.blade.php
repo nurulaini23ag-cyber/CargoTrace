@@ -317,11 +317,29 @@
     let baseTileLayers = {};
     const vesselMarkers = {};
     const shipmentPolylines = {};
+    const shipmentTraveledPolylines = {};
+    const shipmentRemainingPolylines = {};
     const shipmentOriginMarkers = {};
     const shipmentDestMarkers = {};
     let globalBounds;
     let currentFocusShipmentId = null;
     let routeDisplayMode = 'FOCUS'; // 'FOCUS' (clean) or 'ALL' (all lines)
+
+    /**
+     * Helper to get compass direction from bearing degree
+     */
+    function getCompassDirection(bearing) {
+        if (bearing === null || bearing === undefined) return 'Utara';
+        const b = (parseFloat(bearing) % 360 + 360) % 360;
+        if (b >= 337.5 || b < 22.5) return 'U (Utara)';
+        if (b < 67.5) return 'TL (Timur Laut)';
+        if (b < 112.5) return 'T (Timur)';
+        if (b < 157.5) return 'TG (Tenggara)';
+        if (b < 202.5) return 'S (Selatan)';
+        if (b < 247.5) return 'BD (Barat Daya)';
+        if (b < 292.5) return 'B (Barat)';
+        return 'BL (Barat Laut)';
+    }
 
     /**
      * Switch Base Tile Layer (Google/OSM, Satelit, Maritim)
@@ -414,7 +432,8 @@
         const banner = document.getElementById('active-vessel-banner');
         if (banner) {
             document.getElementById('banner-vessel-name').innerText = s.vessel_name;
-            document.getElementById('banner-route-text').innerText = `${s.origin.name} (${s.origin.city}) → ${s.destination.name} (${s.destination.city}) • ${s.cargo_type} (${s.weight_formatted})`;
+            const headingText = `${Math.round(s.current_position.bearing || 0)}° (${getCompassDirection(s.current_position.bearing)})`;
+            document.getElementById('banner-route-text').innerText = `${s.origin.name} (${s.origin.city}) → ${s.destination.name} (${s.destination.city}) • Haluan: ${headingText} • ${s.cargo_type} (${s.weight_formatted})`;
             
             const badge = document.getElementById('banner-status-badge');
             const icon = document.getElementById('banner-status-icon');
@@ -472,54 +491,76 @@
      */
     function updateRoutePolylinesVisibility() {
         fleetShipments.forEach(s => {
-            const poly = shipmentPolylines[s.id];
-            if (!poly) return;
+            const travPoly = shipmentTraveledPolylines[s.id];
+            const remPoly = shipmentRemainingPolylines[s.id];
+            if (!travPoly && !remPoly) return;
 
             const isThisFocused = (currentFocusShipmentId === s.id);
 
             if (currentFocusShipmentId !== null) {
                 // In FOCUS mode: prominently highlight selected route, hide/dim others
                 if (isThisFocused) {
-                    poly.setStyle({
-                        opacity: 0.95,
-                        weight: 5,
-                        color: s.status_color,
-                        dashArray: s.status_type === 'DELIVERED' ? null : '10, 8'
-                    });
-                    poly.bringToFront();
-                    if (!fleetMap.hasLayer(poly)) poly.addTo(fleetMap);
+                    if (travPoly) {
+                        travPoly.setStyle({
+                            opacity: 0.95,
+                            weight: 5.5,
+                            color: s.status_color
+                        });
+                        travPoly.bringToFront();
+                        if (!fleetMap.hasLayer(travPoly)) travPoly.addTo(fleetMap);
+                    }
+                    if (remPoly) {
+                        remPoly.setStyle({
+                            opacity: 0.85,
+                            weight: 4.5,
+                            color: s.status_color,
+                            dashArray: s.status_type === 'DELIVERED' ? null : '8, 8'
+                        });
+                        remPoly.bringToFront();
+                        if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
+                    }
                 } else {
                     if (routeDisplayMode === 'FOCUS') {
-                        if (fleetMap.hasLayer(poly)) fleetMap.removeLayer(poly);
+                        if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
+                        if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
                     } else {
-                        poly.setStyle({
-                            opacity: 0.15,
-                            weight: 2,
-                            color: '#94a3b8',
-                            dashArray: '4, 6'
-                        });
-                        if (!fleetMap.hasLayer(poly)) poly.addTo(fleetMap);
+                        if (travPoly) {
+                            travPoly.setStyle({
+                                opacity: 0.25,
+                                weight: 2.5,
+                                color: s.status_color
+                            });
+                            if (!fleetMap.hasLayer(travPoly)) travPoly.addTo(fleetMap);
+                        }
+                        if (remPoly) {
+                            remPoly.setStyle({
+                                opacity: 0.2,
+                                weight: 2,
+                                color: s.status_color,
+                                dashArray: '4, 6'
+                            });
+                            if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
+                        }
                     }
                 }
             } else {
-                // In overview mode
-                if (routeDisplayMode === 'ALL') {
-                    poly.setStyle({
-                        opacity: 0.45,
-                        weight: 3,
-                        color: s.status_color,
-                        dashArray: s.status_type === 'DELIVERED' ? null : '6, 6'
+                // In overview mode (no single focus)
+                if (travPoly) {
+                    travPoly.setStyle({
+                        opacity: routeDisplayMode === 'ALL' ? 0.75 : 0.65,
+                        weight: routeDisplayMode === 'ALL' ? 3.5 : 3,
+                        color: s.status_color
                     });
-                    if (!fleetMap.hasLayer(poly)) poly.addTo(fleetMap);
-                } else {
-                    // Soft clean preview
-                    poly.setStyle({
-                        opacity: 0.35,
-                        weight: 2.5,
+                    if (!fleetMap.hasLayer(travPoly)) travPoly.addTo(fleetMap);
+                }
+                if (remPoly) {
+                    remPoly.setStyle({
+                        opacity: routeDisplayMode === 'ALL' ? 0.55 : 0.45,
+                        weight: routeDisplayMode === 'ALL' ? 3 : 2.5,
                         color: s.status_color,
-                        dashArray: s.status_type === 'DELIVERED' ? null : '6, 6'
+                        dashArray: s.status_type === 'DELIVERED' ? null : '6, 7'
                     });
-                    if (!fleetMap.hasLayer(poly)) poly.addTo(fleetMap);
+                    if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
                 }
             }
         });
@@ -563,12 +604,15 @@
                 if (vesselMarkers[id]) vesselMarkers[id].addTo(fleetMap);
                 if (shipmentOriginMarkers[id]) shipmentOriginMarkers[id].addTo(fleetMap);
                 if (shipmentDestMarkers[id]) shipmentDestMarkers[id].addTo(fleetMap);
+                if (shipmentTraveledPolylines[id]) shipmentTraveledPolylines[id].addTo(fleetMap);
+                if (shipmentRemainingPolylines[id]) shipmentRemainingPolylines[id].addTo(fleetMap);
             } else {
                 card.style.display = 'none';
                 if (vesselMarkers[id]) fleetMap.removeLayer(vesselMarkers[id]);
                 if (shipmentOriginMarkers[id]) fleetMap.removeLayer(shipmentOriginMarkers[id]);
                 if (shipmentDestMarkers[id]) fleetMap.removeLayer(shipmentDestMarkers[id]);
-                if (shipmentPolylines[id]) fleetMap.removeLayer(shipmentPolylines[id]);
+                if (shipmentTraveledPolylines[id]) fleetMap.removeLayer(shipmentTraveledPolylines[id]);
+                if (shipmentRemainingPolylines[id]) fleetMap.removeLayer(shipmentRemainingPolylines[id]);
             }
         });
 
@@ -618,20 +662,40 @@
             const origin = s.origin;
             const dest = s.destination;
 
-            // Draw Real Maritime Sea Polyline
-            if (s.sea_route && s.sea_route.length >= 2) {
-                const poly = L.polyline(s.sea_route, {
+            // Draw Real-time Traveled Path (Solid line: Origin -> Current Ship Position)
+            if (s.traveled_path && s.traveled_path.length >= 2) {
+                const travPoly = L.polyline(s.traveled_path, {
                     color: s.status_color,
-                    weight: 3,
-                    opacity: 0.35,
-                    dashArray: s.status_type === 'DELIVERED' ? null : '6, 6'
+                    weight: 3.5,
+                    opacity: 0.65
                 }).addTo(fleetMap);
 
-                poly.on('click', () => {
+                travPoly.on('click', () => {
                     selectShipmentRoute(s.id);
                 });
 
-                shipmentPolylines[s.id] = poly;
+                shipmentTraveledPolylines[s.id] = travPoly;
+            }
+
+            // Draw Real-time Remaining Path (Dashed line: Current Ship Position -> Destination)
+            if (s.remaining_path && s.remaining_path.length >= 2) {
+                const remPoly = L.polyline(s.remaining_path, {
+                    color: s.status_color,
+                    weight: 2.5,
+                    opacity: 0.45,
+                    dashArray: s.status_type === 'DELIVERED' ? null : '6, 7'
+                }).addTo(fleetMap);
+
+                remPoly.on('click', () => {
+                    selectShipmentRoute(s.id);
+                });
+
+                shipmentRemainingPolylines[s.id] = remPoly;
+            }
+
+            // Keep reference for sea_route
+            if (s.sea_route && s.sea_route.length >= 2) {
+                shipmentPolylines[s.id] = shipmentTraveledPolylines[s.id] || shipmentRemainingPolylines[s.id];
             }
 
             // Origin Port Marker (A)
@@ -686,7 +750,7 @@
                 globalBounds.extend([dest.lat, dest.lng]);
             }
 
-            // Vessel Marker with 3-Tier Status Color Coding
+            // Vessel Marker with Authentic Top-Down Nautical Navigation Vessel SVG
             if (pos.latitude && pos.longitude) {
                 const isDelivered = (s.status_type === 'DELIVERED');
                 const isDelayed = (s.status_type === 'DELAYED');
@@ -701,30 +765,39 @@
                 const statusDot = isDelivered ? '🟢' : (isDelayed ? '🔴' : '🔵');
 
                 const vesselMarkerHtml = `
-                    <div class="relative flex flex-col items-center pointer-events-auto cursor-pointer" style="width: 120px; margin-left: -60px; margin-top: -38px;">
+                    <div class="relative flex flex-col items-center pointer-events-auto cursor-pointer" style="width: 140px; margin-left: -70px; margin-top: -50px;">
                         
                         <!-- Floating Vessel Name & Status Badge -->
-                        <div class="${badgeColorClass} font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap mb-1 flex items-center gap-1 border border-white/40">
+                        <div class="${badgeColorClass} font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap mb-1 flex items-center gap-1 border border-white/60">
                             <span>${statusDot}</span>
                             <span>${s.vessel_name}</span>
                         </div>
 
-                        <!-- 3D Directional Container Ship SVG -->
-                        <div class="relative w-12 h-6 flex items-center justify-center transform transition-transform duration-150" style="transform: rotate(${Math.round(pos.bearing || 90)}deg);">
+                        <!-- Top-Down Nautical Navigation Vessel (Bow Points UP at 0deg) -->
+                        <div class="relative w-8 h-12 flex items-center justify-center transform transition-transform duration-300" style="transform: rotate(${Math.round(pos.bearing || 0)}deg);">
                             ${isDelayed ? `
-                                <div class="absolute w-9 h-9 rounded-full bg-rose-500/40 border-2 border-rose-500 animate-ping"></div>
+                                <div class="absolute -top-1 w-10 h-10 rounded-full bg-rose-500/40 border-2 border-rose-500 animate-ping"></div>
                             ` : (!isDelivered ? `
-                                <div class="absolute w-8 h-8 rounded-full bg-blue-400/30 animate-pulse"></div>
+                                <div class="absolute -top-1 w-8 h-8 rounded-full bg-blue-400/30 animate-pulse"></div>
                             ` : '')}
 
-                            <svg width="48" height="24" viewBox="0 0 60 28" fill="none">
-                                <path d="M4 16L10 25H48L56 16H4Z" fill="${hullColor}" stroke="#0f172a" stroke-width="1.3"/>
-                                <path d="M4 16L12 11H50L56 16H4Z" fill="#334155"/>
-                                <rect x="40" y="4" width="9" height="8" rx="1" fill="#f8fafc" stroke="#cbd5e1" stroke-width="0.8"/>
-                                <rect x="42" y="6" width="5" height="2.5" rx="0.5" fill="#38bdf8"/>
-                                <rect x="12" y="7" width="8" height="5" rx="0.5" fill="#C49A55"/>
-                                <rect x="21" y="7" width="8" height="5" rx="0.5" fill="${isCoffee ? '#78350f' : '#ea580c'}"/>
-                                <rect x="30" y="7" width="8" height="5" rx="0.5" fill="${hullColor}"/>
+                            <svg width="32" height="48" viewBox="0 0 32 48" fill="none">
+                                <!-- Hull Shadow -->
+                                <path d="M16 2 C22 10 28 20 28 42 C22 45 10 45 4 42 C4 20 10 10 16 2 Z" fill="#0f172a" fill-opacity="0.35"/>
+                                <!-- Main Ship Hull (Bow Pointed Up at Y=3) -->
+                                <path d="M16 3 C21.5 11 26.5 20 26.5 40 C21 42.5 11 42.5 5.5 40 C5.5 20 10.5 11 16 3 Z" fill="${hullColor}" stroke="#0f172a" stroke-width="1.8"/>
+                                <!-- Deck Well -->
+                                <path d="M16 7 C19.5 13 23 20 23 37 C19 39 13 39 9 37 C9 20 12.5 13 16 7 Z" fill="#334155"/>
+                                <!-- Cargo Container Stacks -->
+                                <rect x="10.5" y="15" width="5" height="8" rx="0.8" fill="${isCoffee ? '#92400e' : '#ea580c'}" stroke="#1e293b" stroke-width="0.6"/>
+                                <rect x="16.5" y="15" width="5" height="8" rx="0.8" fill="#f59e0b" stroke="#1e293b" stroke-width="0.6"/>
+                                <rect x="10.5" y="24" width="5" height="8" rx="0.8" fill="${hullColor}" stroke="#1e293b" stroke-width="0.6"/>
+                                <rect x="16.5" y="24" width="5" height="8" rx="0.8" fill="${isCoffee ? '#78350f' : '#c2410c'}" stroke="#1e293b" stroke-width="0.6"/>
+                                <!-- Bridge Superstructure at Stern -->
+                                <rect x="10.5" y="33" width="11" height="4.5" rx="1" fill="#f8fafc" stroke="#64748b" stroke-width="0.8"/>
+                                <rect x="12" y="34" width="8" height="1.5" rx="0.4" fill="#38bdf8"/>
+                                <!-- Directional Navigation Bow Arrow -->
+                                <polygon points="16,4 19,11 13,11" fill="#ffffff"/>
                             </svg>
                         </div>
                     </div>
@@ -734,14 +807,15 @@
                     icon: L.divIcon({
                         html: vesselMarkerHtml,
                         className: 'gmap-vessel-marker',
-                        iconSize: [120, 50],
-                        iconAnchor: [60, 38],
-                        popupAnchor: [0, -38]
+                        iconSize: [140, 72],
+                        iconAnchor: [70, 50],
+                        popupAnchor: [0, -50]
                     }),
                     zIndexOffset: isDelayed ? 950 : (isDelivered ? 850 : 900)
                 }).addTo(fleetMap);
 
                 // Rich InfoWindow Popup
+                const compassDir = getCompassDirection(pos.bearing);
                 const infoWindowHtml = `
                     <div class="p-2 font-sans text-xs min-w-[280px]">
                         <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
@@ -765,11 +839,13 @@
 
                         <div class="mt-2 p-2 bg-white rounded-lg border border-slate-200 text-[11px] space-y-1">
                             <div class="flex items-center justify-between">
-                                <span class="font-bold text-slate-800">📍 Posisi Terkini:</span>
+                                <span class="font-bold text-slate-800">📍 Posisi Real-Time:</span>
                                 <span class="font-mono text-[10px] font-black">${s.progress_percent}% Tuntas</span>
                             </div>
                             <div class="text-xs font-bold text-slate-900">${pos.location_name}</div>
-                            <div class="text-[10px] text-slate-400 font-mono">Koordinat: ${parseFloat(pos.latitude).toFixed(4)}°, ${parseFloat(pos.longitude).toFixed(4)}°</div>
+                            <div class="text-[10px] text-slate-500 font-mono">
+                                Haluan Navigasi: <strong>${Math.round(pos.bearing || 0)}° (${compassDir})</strong> &bull; ${parseFloat(pos.latitude).toFixed(4)}°, ${parseFloat(pos.longitude).toFixed(4)}°
+                            </div>
                             ${s.is_signal_offline ? `
                                 <div class="mt-1 text-[10px] font-bold text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-200 flex items-center gap-1">
                                     <span>⚠️</span>
@@ -819,12 +895,15 @@
                         if (vesselMarkers[id]) vesselMarkers[id].addTo(fleetMap);
                         if (shipmentOriginMarkers[id]) shipmentOriginMarkers[id].addTo(fleetMap);
                         if (shipmentDestMarkers[id]) shipmentDestMarkers[id].addTo(fleetMap);
+                        if (shipmentTraveledPolylines[id]) shipmentTraveledPolylines[id].addTo(fleetMap);
+                        if (shipmentRemainingPolylines[id]) shipmentRemainingPolylines[id].addTo(fleetMap);
                     } else {
                         card.style.display = 'none';
                         if (vesselMarkers[id]) fleetMap.removeLayer(vesselMarkers[id]);
                         if (shipmentOriginMarkers[id]) fleetMap.removeLayer(shipmentOriginMarkers[id]);
                         if (shipmentDestMarkers[id]) fleetMap.removeLayer(shipmentDestMarkers[id]);
-                        if (shipmentPolylines[id]) fleetMap.removeLayer(shipmentPolylines[id]);
+                        if (shipmentTraveledPolylines[id]) fleetMap.removeLayer(shipmentTraveledPolylines[id]);
+                        if (shipmentRemainingPolylines[id]) fleetMap.removeLayer(shipmentRemainingPolylines[id]);
                     }
                 });
 
