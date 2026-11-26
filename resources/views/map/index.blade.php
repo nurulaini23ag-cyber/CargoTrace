@@ -25,24 +25,30 @@
             </p>
         </div>
 
-        <!-- 3-Tier Status Metric Badges -->
+        <!-- 4-Tier Status Metric Badges -->
         <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <div class="px-3.5 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-center min-w-[85px]">
+            <div class="px-3.5 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-center min-w-[80px]">
                 <div class="text-[10px] uppercase font-bold text-slate-400">Semua Kapal</div>
                 <div class="text-lg font-black text-white" id="stat-total">{{ $stats['total'] }}</div>
             </div>
-            <div class="px-3.5 py-2 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-center min-w-[85px]">
+            <div class="px-3.5 py-2 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-center min-w-[80px]">
                 <div class="text-[10px] uppercase font-bold text-emerald-300">🟢 Sudah Sampai</div>
                 <div class="text-lg font-black text-emerald-400" id="stat-delivered">{{ $stats['delivered'] }}</div>
             </div>
-            <div class="px-3.5 py-2 bg-sky-950/60 border border-sky-500/40 rounded-xl text-center min-w-[85px]">
+            <div class="px-3.5 py-2 bg-sky-950/60 border border-sky-500/40 rounded-xl text-center min-w-[80px]">
                 <div class="text-[10px] uppercase font-bold text-sky-300">🔵 Lagi Transit</div>
                 <div class="text-lg font-black text-sky-400" id="stat-sailing">{{ $stats['in_transit'] }}</div>
             </div>
-            <div class="px-3.5 py-2 bg-rose-950/60 border border-rose-500/40 rounded-xl text-center min-w-[85px]">
+            <div class="px-3.5 py-2 bg-rose-950/60 border border-rose-500/40 rounded-xl text-center min-w-[80px]">
                 <div class="text-[10px] uppercase font-bold text-rose-300">🔴 Terhambat</div>
                 <div class="text-lg font-black text-rose-400" id="stat-delayed">{{ $stats['delayed'] }}</div>
             </div>
+            @if(($stats['staged'] ?? 0) > 0)
+            <div class="px-3.5 py-2 bg-amber-950/60 border border-amber-500/40 rounded-xl text-center min-w-[80px]">
+                <div class="text-[10px] uppercase font-bold text-amber-300">📦 Di Pelabuhan</div>
+                <div class="text-lg font-black text-amber-400" id="stat-staged">{{ $stats['staged'] }}</div>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -56,7 +62,7 @@
             <span class="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
         </div>
 
-        <!-- 3-Tier Status Filter Chips -->
+        <!-- 4-Tier Status Filter Chips -->
         <div class="flex flex-wrap items-center gap-1.5 text-xs">
             <button type="button" onclick="applyQuickFilter('ALL')" id="chip-ALL"
                     class="filter-chip px-3 py-1.5 rounded-full font-black border transition bg-slate-900 text-white border-slate-900 shadow-xs cursor-pointer">
@@ -72,8 +78,14 @@
             </button>
             <button type="button" onclick="applyQuickFilter('DELAYED')" id="chip-DELAYED"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100 cursor-pointer">
-                🔴 Terhambat / Delay ({{ $stats['delayed'] }})
+                🔴 Terhambat ({{ $stats['delayed'] }})
             </button>
+            @if(($stats['staged'] ?? 0) > 0)
+            <button type="button" onclick="applyQuickFilter('STAGED')" id="chip-STAGED"
+                    class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 cursor-pointer">
+                📦 Di Pelabuhan Asal ({{ $stats['staged'] }})
+            </button>
+            @endif
             <button type="button" onclick="applyQuickFilter('WEST')" id="chip-WEST"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100 cursor-pointer">
                 🇪🇺 Di Barat (Eropa)
@@ -217,6 +229,8 @@
                              bg-emerald-50/40 border-emerald-200 hover:border-emerald-500
                          @elseif($s['status_type'] === 'DELAYED')
                              bg-rose-50/40 border-rose-200 hover:border-rose-500
+                         @elseif($s['status_type'] === 'STAGED')
+                             bg-amber-50/40 border-amber-200 hover:border-amber-500
                          @else
                              bg-sky-50/30 border-sky-200 hover:border-sky-500
                          @endif"
@@ -238,18 +252,21 @@
                                 <div class="text-[11px] font-mono font-bold mt-0.5
                                     @if($s['status_type'] === 'DELIVERED') text-emerald-700
                                     @elseif($s['status_type'] === 'DELAYED') text-rose-700
+                                    @elseif($s['status_type'] === 'STAGED') text-amber-700
                                     @else text-sky-700 @endif">
                                     {{ $s['number'] }} &bull; {{ $s['carrier'] }}
                                 </div>
                             </div>
 
-                            <!-- 3-Tier Status Pill -->
+                            <!-- 4-Tier Status Pill -->
                             <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full shrink-0 border
                                 @if($s['status_type'] === 'DELIVERED') bg-emerald-100 text-emerald-800 border-emerald-300
                                 @elseif($s['status_type'] === 'DELAYED') bg-rose-100 text-rose-800 border-rose-300
+                                @elseif($s['status_type'] === 'STAGED') bg-amber-100 text-amber-800 border-amber-300
                                 @else bg-sky-100 text-sky-800 border-sky-300 @endif">
                                 @if($s['status_type'] === 'DELIVERED') 🟢 SUDAH SAMPAI
                                 @elseif($s['status_type'] === 'DELAYED') 🔴 TERHAMBAT
+                                @elseif($s['status_type'] === 'STAGED') 📦 DI ASAL
                                 @else 🔵 BERLAYAR @endif
                             </span>
                         </div>
@@ -448,6 +465,11 @@
                 badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-rose-500/30 text-rose-300 border border-rose-400/40';
                 icon.className = 'w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shrink-0 bg-rose-600';
                 icon.innerText = '⚠️';
+            } else if (s.status_type === 'STAGED') {
+                badge.innerText = '📦 PROSES DI PELABUHAN ASAL';
+                badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-amber-500/30 text-amber-300 border border-amber-400/40';
+                icon.className = 'w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shrink-0 bg-amber-600';
+                icon.innerText = '📦';
             } else {
                 badge.innerText = '🔵 SEDANG BERLAYAR DI JALUR LAUT';
                 badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-sky-500/30 text-sky-300 border border-sky-400/40';
@@ -498,12 +520,12 @@
             const isThisFocused = (currentFocusShipmentId === s.id);
 
             if (currentFocusShipmentId !== null) {
-                // In FOCUS mode: prominently highlight selected route, hide/dim others
+                // In FOCUS mode: prominently highlight selected route, hide all others
                 if (isThisFocused) {
                     if (travPoly) {
                         travPoly.setStyle({
                             opacity: 0.95,
-                            weight: 5.5,
+                            weight: 5,
                             color: s.status_color
                         });
                         travPoly.bringToFront();
@@ -512,7 +534,7 @@
                     if (remPoly) {
                         remPoly.setStyle({
                             opacity: 0.85,
-                            weight: 4.5,
+                            weight: 4,
                             color: s.status_color,
                             dashArray: s.status_type === 'DELIVERED' ? null : '8, 8'
                         });
@@ -520,47 +542,39 @@
                         if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
                     }
                 } else {
-                    if (routeDisplayMode === 'FOCUS') {
-                        if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
-                        if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
-                    } else {
+                    if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
+                    if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
+                }
+            } else {
+                // In overview mode (no single focus)
+                if (routeDisplayMode === 'ALL') {
+                    // Show lines for active voyages and delivered (skip staged to prevent clutter)
+                    if (s.status_type !== 'STAGED') {
                         if (travPoly) {
                             travPoly.setStyle({
-                                opacity: 0.25,
-                                weight: 2.5,
+                                opacity: 0.7,
+                                weight: 3.5,
                                 color: s.status_color
                             });
                             if (!fleetMap.hasLayer(travPoly)) travPoly.addTo(fleetMap);
                         }
                         if (remPoly) {
                             remPoly.setStyle({
-                                opacity: 0.2,
-                                weight: 2,
+                                opacity: 0.5,
+                                weight: 2.5,
                                 color: s.status_color,
-                                dashArray: '4, 6'
+                                dashArray: s.status_type === 'DELIVERED' ? null : '6, 7'
                             });
                             if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
                         }
+                    } else {
+                        if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
+                        if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
                     }
-                }
-            } else {
-                // In overview mode (no single focus)
-                if (travPoly) {
-                    travPoly.setStyle({
-                        opacity: routeDisplayMode === 'ALL' ? 0.75 : 0.65,
-                        weight: routeDisplayMode === 'ALL' ? 3.5 : 3,
-                        color: s.status_color
-                    });
-                    if (!fleetMap.hasLayer(travPoly)) travPoly.addTo(fleetMap);
-                }
-                if (remPoly) {
-                    remPoly.setStyle({
-                        opacity: routeDisplayMode === 'ALL' ? 0.55 : 0.45,
-                        weight: routeDisplayMode === 'ALL' ? 3 : 2.5,
-                        color: s.status_color,
-                        dashArray: s.status_type === 'DELIVERED' ? null : '6, 7'
-                    });
-                    if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
+                } else {
+                    // In FOCUS mode (Clean Overview): No lines cluttering map until a ship is clicked
+                    if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
+                    if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
                 }
             }
         });
@@ -593,6 +607,7 @@
             else if (type === 'DELIVERED' && status === 'DELIVERED') show = true;
             else if (type === 'IN_TRANSIT' && status === 'IN_TRANSIT') show = true;
             else if (type === 'DELAYED' && status === 'DELAYED') show = true;
+            else if (type === 'STAGED' && status === 'STAGED') show = true;
             else if (type === 'WEST' && card.getAttribute('data-west') === '1') show = true;
             else if (type === 'OFFLINE' && card.getAttribute('data-offline') === '1') show = true;
             else if (type === 'COFFEE' && commodity === 'COFFEE') show = true;
@@ -604,8 +619,6 @@
                 if (vesselMarkers[id]) vesselMarkers[id].addTo(fleetMap);
                 if (shipmentOriginMarkers[id]) shipmentOriginMarkers[id].addTo(fleetMap);
                 if (shipmentDestMarkers[id]) shipmentDestMarkers[id].addTo(fleetMap);
-                if (shipmentTraveledPolylines[id]) shipmentTraveledPolylines[id].addTo(fleetMap);
-                if (shipmentRemainingPolylines[id]) shipmentRemainingPolylines[id].addTo(fleetMap);
             } else {
                 card.style.display = 'none';
                 if (vesselMarkers[id]) fleetMap.removeLayer(vesselMarkers[id]);
@@ -615,6 +628,8 @@
                 if (shipmentRemainingPolylines[id]) fleetMap.removeLayer(shipmentRemainingPolylines[id]);
             }
         });
+
+        updateRoutePolylinesVisibility();
 
         const badge = document.getElementById('vessel-count-badge');
         if (badge) badge.innerText = `${visibleCount} Kapal`;
@@ -668,7 +683,7 @@
                     color: s.status_color,
                     weight: 3.5,
                     opacity: 0.65
-                }).addTo(fleetMap);
+                });
 
                 travPoly.on('click', () => {
                     selectShipmentRoute(s.id);
@@ -684,7 +699,7 @@
                     weight: 2.5,
                     opacity: 0.45,
                     dashArray: s.status_type === 'DELIVERED' ? null : '6, 7'
-                }).addTo(fleetMap);
+                });
 
                 remPoly.on('click', () => {
                     selectShipmentRoute(s.id);
@@ -701,7 +716,7 @@
             // Origin Port Marker (A)
             if (origin.lat && origin.lng) {
                 const originPinHtml = `
-                    <div class="relative flex items-center justify-center cursor-pointer" style="width: 24px; height: 30px; margin-left: -12px; margin-top: -30px;">
+                    <div class="relative flex items-center justify-center cursor-pointer" style="width: 24px; height: 30px;">
                         <svg width="24" height="30" viewBox="0 0 24 30" fill="none">
                             <path d="M12 0C5.37 0 0 5.37 0 12C0 21 12 30 12 30C12 30 24 21 24 12C24 5.37 18.63 0 12 0Z" fill="#10b981"/>
                             <circle cx="12" cy="11" r="5" fill="#ffffff"/>
@@ -710,7 +725,13 @@
                     </div>
                 `;
                 const origMarker = L.marker([origin.lat, origin.lng], {
-                    icon: L.divIcon({ html: originPinHtml, className: 'gmap-origin-pin', iconSize: [24, 30] }),
+                    icon: L.divIcon({
+                        html: originPinHtml,
+                        className: 'gmap-origin-pin',
+                        iconSize: [24, 30],
+                        iconAnchor: [12, 30],
+                        popupAnchor: [0, -30]
+                    }),
                     zIndexOffset: 300
                 }).addTo(fleetMap).bindPopup(`
                     <div class="p-2 font-sans text-xs">
@@ -727,7 +748,7 @@
             // Destination Port Marker (B)
             if (dest.lat && dest.lng) {
                 const destPinHtml = `
-                    <div class="relative flex items-center justify-center cursor-pointer" style="width: 24px; height: 30px; margin-left: -12px; margin-top: -30px;">
+                    <div class="relative flex items-center justify-center cursor-pointer" style="width: 24px; height: 30px;">
                         <svg width="24" height="30" viewBox="0 0 24 30" fill="none">
                             <path d="M12 0C5.37 0 0 5.37 0 12C0 21 12 30 12 30C12 30 24 21 24 12C24 5.37 18.63 0 12 0Z" fill="#ef4444"/>
                             <circle cx="12" cy="11" r="5" fill="#ffffff"/>
@@ -736,7 +757,13 @@
                     </div>
                 `;
                 const destMarker = L.marker([dest.lat, dest.lng], {
-                    icon: L.divIcon({ html: destPinHtml, className: 'gmap-dest-pin', iconSize: [24, 30] }),
+                    icon: L.divIcon({
+                        html: destPinHtml,
+                        className: 'gmap-dest-pin',
+                        iconSize: [24, 30],
+                        iconAnchor: [12, 30],
+                        popupAnchor: [0, -30]
+                    }),
                     zIndexOffset: 300
                 }).addTo(fleetMap).bindPopup(`
                     <div class="p-2 font-sans text-xs">
@@ -754,18 +781,34 @@
             if (pos.latitude && pos.longitude) {
                 const isDelivered = (s.status_type === 'DELIVERED');
                 const isDelayed = (s.status_type === 'DELAYED');
+                const isStaged = (s.status_type === 'STAGED');
                 const isCoffee = (s.commodity === 'COFFEE');
 
-                // Color choices:
-                // Hijau Emerald (#10b981) for DELIVERED
-                // Merah Peringatan (#e11d48) for DELAYED
-                // Biru Samudra (#0284c7) for IN_TRANSIT
-                const hullColor = isDelivered ? '#10b981' : (isDelayed ? '#e11d48' : '#0284c7');
-                const badgeColorClass = isDelivered ? 'bg-emerald-600 text-white' : (isDelayed ? 'bg-rose-600 text-white' : 'bg-blue-600 text-white');
-                const statusDot = isDelivered ? '🟢' : (isDelayed ? '🔴' : '🔵');
+                // Customer-Requested Visual Types & Color Coding:
+                // 1. Sudah Sampai (Delivered) -> Hijau Emerald (#10b981)
+                // 2. Terhambat (Delayed / Exception) -> Merah Peringatan (#e11d48)
+                // 3. Proses Asal (Staged / Belum Berlayar) -> Kuning Amber (#d97706)
+                // 4. Sedang Berlayar (In Transit Normal) -> Biru Samudra (#0284c7)
+                let hullColor = '#0284c7';
+                let badgeColorClass = 'bg-blue-600 text-white';
+                let statusDot = '🔵';
+
+                if (isDelivered) {
+                    hullColor = '#10b981';
+                    badgeColorClass = 'bg-emerald-600 text-white';
+                    statusDot = '🟢';
+                } else if (isDelayed) {
+                    hullColor = '#e11d48';
+                    badgeColorClass = 'bg-rose-600 text-white';
+                    statusDot = '🔴';
+                } else if (isStaged) {
+                    hullColor = '#d97706';
+                    badgeColorClass = 'bg-amber-600 text-white';
+                    statusDot = '📦';
+                }
 
                 const vesselMarkerHtml = `
-                    <div class="relative flex flex-col items-center pointer-events-auto cursor-pointer" style="width: 140px; margin-left: -70px; margin-top: -50px;">
+                    <div class="relative flex flex-col items-center pointer-events-auto cursor-pointer" style="width: 140px; height: 72px;">
                         
                         <!-- Floating Vessel Name & Status Badge -->
                         <div class="${badgeColorClass} font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap mb-1 flex items-center gap-1 border border-white/60">
@@ -777,7 +820,7 @@
                         <div class="relative w-8 h-12 flex items-center justify-center transform transition-transform duration-300" style="transform: rotate(${Math.round(pos.bearing || 0)}deg);">
                             ${isDelayed ? `
                                 <div class="absolute -top-1 w-10 h-10 rounded-full bg-rose-500/40 border-2 border-rose-500 animate-ping"></div>
-                            ` : (!isDelivered ? `
+                            ` : (!isDelivered && !isStaged ? `
                                 <div class="absolute -top-1 w-8 h-8 rounded-full bg-blue-400/30 animate-pulse"></div>
                             ` : '')}
 
@@ -808,11 +851,15 @@
                         html: vesselMarkerHtml,
                         className: 'gmap-vessel-marker',
                         iconSize: [140, 72],
-                        iconAnchor: [70, 50],
-                        popupAnchor: [0, -50]
+                        iconAnchor: [70, 46],
+                        popupAnchor: [0, -46]
                     }),
-                    zIndexOffset: isDelayed ? 950 : (isDelivered ? 850 : 900)
+                    zIndexOffset: isDelayed ? 950 : (isDelivered ? 850 : (isStaged ? 800 : 900))
                 }).addTo(fleetMap);
+
+                vMarker.on('click', () => {
+                    selectShipmentRoute(s.id);
+                });
 
                 // Rich InfoWindow Popup
                 const compassDir = getCompassDirection(pos.bearing);
@@ -873,6 +920,9 @@
             }
         });
 
+        // 4. Initial Route Lines Visibility based on Mode (Clean FOCUS mode by default)
+        updateRoutePolylinesVisibility();
+
         // Fit map bounds
         if (!globalBounds.isEmpty()) {
             fleetMap.fitBounds(globalBounds, { padding: [50, 50], maxZoom: 5 });
@@ -895,17 +945,15 @@
                         if (vesselMarkers[id]) vesselMarkers[id].addTo(fleetMap);
                         if (shipmentOriginMarkers[id]) shipmentOriginMarkers[id].addTo(fleetMap);
                         if (shipmentDestMarkers[id]) shipmentDestMarkers[id].addTo(fleetMap);
-                        if (shipmentTraveledPolylines[id]) shipmentTraveledPolylines[id].addTo(fleetMap);
-                        if (shipmentRemainingPolylines[id]) shipmentRemainingPolylines[id].addTo(fleetMap);
                     } else {
                         card.style.display = 'none';
                         if (vesselMarkers[id]) fleetMap.removeLayer(vesselMarkers[id]);
                         if (shipmentOriginMarkers[id]) fleetMap.removeLayer(shipmentOriginMarkers[id]);
                         if (shipmentDestMarkers[id]) fleetMap.removeLayer(shipmentDestMarkers[id]);
-                        if (shipmentTraveledPolylines[id]) fleetMap.removeLayer(shipmentTraveledPolylines[id]);
-                        if (shipmentRemainingPolylines[id]) fleetMap.removeLayer(shipmentRemainingPolylines[id]);
                     }
                 });
+
+                updateRoutePolylinesVisibility();
 
                 const badge = document.getElementById('vessel-count-badge');
                 if (badge) badge.innerText = `${matchCount} Kapal`;

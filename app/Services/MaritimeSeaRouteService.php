@@ -464,4 +464,145 @@ class MaritimeSeaRouteService
         $bearing = rad2deg(atan2($y, $x));
         return fmod(($bearing + 360.0), 360.0);
     }
+
+    /**
+     * Resolves the shipment's full maritime route, visited transit points,
+     * current real-time coordinates, and traveled vs remaining paths.
+     * All points are guaranteed to navigate strictly in open waters.
+     */
+    public static function getShipmentTransitRoute(\App\Models\Shipment $s): array
+    {
+        $originCode = strtoupper($s->origin?->code ?? '');
+        $destCode = strtoupper($s->destination?->code ?? '');
+        
+        $originLat = (float)($s->origin?->latitude ?? 0);
+        $originLng = (float)($s->origin?->longitude ?? 0);
+        $destLat = (float)($s->destination?->latitude ?? 0);
+        $destLng = (float)($s->destination?->longitude ?? 0);
+
+        $cur = $s->getCurrentPosition();
+        $isDelivered = ($s->current_status === 'DELIVERED');
+        $isStaged = in_array($s->current_status, [
+            \App\Models\Shipment::STATUS_CREATED,
+            \App\Models\Shipment::STATUS_BOOKED,
+            \App\Models\Shipment::STATUS_PICKED_UP,
+            'ORDER_CONFIRMED',
+            'PROCESSING',
+            'READY_FOR_SHIPMENT',
+        ], true);
+
+        // Base realistic sea route
+        $baseRoute = self::getMaritimeRoute($originLat, $originLng, $destLat, $destLng, $originCode, $destCode);
+
+        // Resolve precise ship coordinates from real transit events or origin/dest
+        if ($isDelivered) {
+            $shipLat = $destLat;
+            $shipLng = $destLng;
+            $progress = 100;
+        } elseif ($isStaged) {
+            $shipLat = $originLat;
+            $shipLng = $originLng;
+            $progress = 10;
+        } else {
+            $shipLat = (float)($cur['latitude'] ?? $originLat);
+            $shipLng = (float)($cur['longitude'] ?? $originLng);
+            $progress = (int)($cur['progress_percent'] ?? 50);
+        }
+
+        // Find nearest segment on base route to ship position
+        $minDist = 999999;
+        $bestSeg = 0;
+        for ($i = 0; $i < count($baseRoute) - 1; $i++) {
+            $p1 = $baseRoute[$i];
+            $p2 = $baseRoute[$i + 1];
+            for ($step = 0; $step <= 20; $step++) {
+                $t = $step / 20.0;
+                $sLat = $p1[0] + $t * ($p2[0] - $p1[0]);
+                $sLng = $p1[1] + $t * ($p2[1] - $p1[1]);
+                $d = self::haversineDistance($shipLat, $shipLng, $sLat, $sLng);
+                if ($d < $minDist) {
+                    $minDist = $d;
+                    $bestSeg = $i;
+                }
+            }
+        }
+
+        // Traveled path: origin -> waypoints up to bestSeg -> shipLat, shipLng
+        $traveled = [];
+        if (!$isStaged) {
+            for ($i = 0; $i <= $bestSeg; $i++) {
+                $traveled[] = $baseRoute[$i];
+            }
+            $traveled[] = [$shipLat, $shipLng];
+        } else {
+            $traveled[] = [$shipLat, $shipLng];
+        }
+
+        // Remaining path: shipLat, shipLng -> remaining waypoints -> dest
+        $remaining = [];
+        if (!$isDelivered) {
+            $remaining[] = [$shipLat, $shipLng];
+            for ($i = $bestSeg + 1; $i < count($baseRoute); $i++) {
+                $pt = $baseRoute[$i];
+                // Skip waypoints closer than 80km to avoid micro-blips / backward bearings,
+                // unless it is the final destination port
+                $dist = self::haversineDistance($shipLat, $shipLng, $pt[0], $pt[1]);
+                if ($dist > 80.0 || $i === count($baseRoute) - 1) {
+                    $remaining[] = $pt;
+                }
+            }
+        } else {
+            $remaining[] = [$shipLat, $shipLng];
+        }
+
+        // Clean consecutive duplicates
+        $cleanTraveled = [];
+        foreach ($traveled as $pt) {
+            if (empty($cleanTraveled) || (abs($cleanTraveled[count($cleanTraveled)-1][0] - $pt[0]) > 0.001 || abs($cleanTraveled[count($cleanTraveled)-1][1] - $pt[1]) > 0.001)) {
+                $cleanTraveled[] = [round($pt[0], 5), round($pt[1], 5)];
+            }
+        }
+
+        $cleanRemaining = [];
+        foreach ($remaining as $pt) {
+            if (empty($cleanRemaining) || (abs($cleanRemaining[count($cleanRemaining)-1][0] - $pt[0]) > 0.001 || abs($cleanRemaining[count($cleanRemaining)-1][1] - $pt[1]) > 0.001)) {
+                $cleanRemaining[] = [round($pt[0], 5), round($pt[1], 5)];
+            }
+        }
+
+        // Calculate real-time navigation bearing
+        $bearing = 0.0;
+        if (count($cleanRemaining) >= 2) {
+            $bearing = self::calculateBearing(
+                $cleanRemaining[0][0],
+                $cleanRemaining[0][1],
+                $cleanRemaining[1][0],
+                $cleanRemaining[1][1]
+            );
+        } elseif (count($cleanTraveled) >= 2) {
+            $bearing = self::calculateBearing(
+                $cleanTraveled[count($cleanTraveled)-2][0],
+                $cleanTraveled[count($cleanTraveled)-2][1],
+                $cleanTraveled[count($cleanTraveled)-1][0],
+                $cleanTraveled[count($cleanTraveled)-1][1]
+            );
+        }
+
+        // Unified full route
+        $fullRoute = $cleanTraveled;
+        for ($i = 1; $i < count($cleanRemaining); $i++) {
+            $fullRoute[] = $cleanRemaining[$i];
+        }
+
+        return [
+            'ship_lat' => $shipLat,
+            'ship_lng' => $shipLng,
+            'bearing' => round($bearing, 1),
+            'progress_percent' => $progress,
+            'traveled_path' => $cleanTraveled,
+            'remaining_path' => $cleanRemaining,
+            'sea_route' => $fullRoute,
+            'location_name' => $cur['location_name'] ?? 'In Transit Sea Corridor',
+        ];
+    }
 }

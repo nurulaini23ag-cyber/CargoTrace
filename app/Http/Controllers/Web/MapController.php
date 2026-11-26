@@ -108,22 +108,32 @@ class MapController extends Controller
             $destLat = (float) ($s->destination?->latitude ?? 0);
             $destLng = (float) ($s->destination?->longitude ?? 0);
 
-            // True maritime sea corridor (no cutting across land)
-            $seaRouteCoords = MaritimeSeaRouteService::getMaritimeRoute(
-                $originLat,
-                $originLng,
-                $destLat,
-                $destLng,
-                $s->origin?->code ?? '',
-                $s->destination?->code ?? ''
-            );
+            // True maritime sea corridor routed through authentic transit checkpoints
+            $routeData = MaritimeSeaRouteService::getShipmentTransitRoute($s);
+            $shipLat = $routeData['ship_lat'];
+            $shipLng = $routeData['ship_lng'];
+            $shipBearing = $routeData['bearing'];
+            $progressPercent = $routeData['progress_percent'];
+            $seaRouteCoords = $routeData['sea_route'];
+            $traveledPath = $routeData['traveled_path'];
+            $remainingPath = $routeData['remaining_path'];
+            $locationName = $routeData['location_name'];
 
-            // Three Customer-Requested Visual Types & Color Coding:
+            // Customer-Requested Visual Types & Color Coding:
             // 1. Sudah Sampai (Delivered) -> Hijau Emerald (#10b981)
             // 2. Terhambat (Delayed / Exception / Problem) -> Merah Peringatan (#e11d48)
-            // 3. Sedang Berlayar (In Transit Normal) -> Biru Samudra (#0284c7)
+            // 3. Proses Asal (Staged / Created / Booked / Picked Up) -> Kuning Amber (#d97706)
+            // 4. Sedang Berlayar (In Transit Normal) -> Biru Samudra (#0284c7)
             $isDelivered = ($s->current_status === 'DELIVERED');
             $isDelayed = ($s->is_delayed || $s->delay_hours > 0 || ($currentPos['is_signal_offline'] ?? false));
+            $isStaged = in_array($s->current_status, [
+                Shipment::STATUS_CREATED,
+                Shipment::STATUS_BOOKED,
+                Shipment::STATUS_PICKED_UP,
+                'ORDER_CONFIRMED',
+                'PROCESSING',
+                'READY_FOR_SHIPMENT',
+            ], true);
 
             if ($isDelivered) {
                 $statusType = 'DELIVERED';
@@ -131,7 +141,6 @@ class MapController extends Controller
                 $statusColor = '#10b981'; // Emerald Green
                 $statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
                 $shipColor = 'emerald';
-                $progressPercent = 100;
                 $navStatus = 'SUDAH SAMPAI (SELESAI)';
             } elseif ($isDelayed) {
                 $statusType = 'DELAYED';
@@ -139,38 +148,22 @@ class MapController extends Controller
                 $statusColor = '#e11d48'; // Vibrant Warning Red
                 $statusBadgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
                 $shipColor = 'rose';
-                $progressPercent = $currentPos['progress_percent'] ?? 45;
                 $navStatus = 'TERHAMBAT (DELAY ' . round($s->delay_hours, 1) . ' Jam)';
+            } elseif ($isStaged) {
+                $statusType = 'STAGED';
+                $statusLabel = 'PROSES DI PELABUHAN ASAL';
+                $statusColor = '#d97706'; // Amber Gold
+                $statusBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
+                $shipColor = 'amber';
+                $navStatus = 'SIAP MUAT DI ASAL';
             } else {
                 $statusType = 'IN_TRANSIT';
                 $statusLabel = 'SEDANG BERLAYAR (IN TRANSIT)';
                 $statusColor = '#0284c7'; // Ocean Blue
                 $statusBadgeClass = 'bg-blue-100 text-blue-800 border-blue-300';
                 $shipColor = 'blue';
-                $progressPercent = $currentPos['progress_percent'] ?? 55;
                 $navStatus = 'SEDANG BERLAYAR LANCAR';
             }
-
-            // Interpolate ship coordinates along true sea channel (or respect LKP coordinates if offline)
-            if (!empty($currentPos['is_signal_offline']) && !empty($currentPos['latitude'])) {
-                $shipLat = (float) $currentPos['latitude'];
-                $shipLng = (float) $currentPos['longitude'];
-                $shipBearing = 270;
-                $segIdx = 0;
-            } else {
-                [$shipLat, $shipLng, $shipBearing, $segIdx] = MaritimeSeaRouteService::interpolatePositionAlongRoute(
-                    $seaRouteCoords,
-                    $progressPercent
-                );
-            }
-
-            // Split route into traveled path and remaining path
-            $splitRoute = MaritimeSeaRouteService::splitRouteAtPosition(
-                $seaRouteCoords,
-                $shipLat,
-                $shipLng,
-                $segIdx
-            );
 
             // Assign distinct vessel name
             $vesselName = ($s->vessel_carrier && $s->vessel_carrier !== 'MV Maersk Semarang')
@@ -235,14 +228,14 @@ class MapController extends Controller
                     'latitude' => $shipLat,
                     'longitude' => $shipLng,
                     'bearing' => $shipBearing,
-                    'location_name' => $currentPos['location_name'] ?? 'Jalur Laut Internasional',
+                    'location_name' => $locationName,
                     'last_updated' => $currentPos['last_updated'] ?? now()->format('Y-m-d H:i'),
                     'progress_percent' => $progressPercent,
                     'is_west_sector' => (bool) ($currentPos['is_west_sector'] ?? false),
                 ],
                 'sea_route' => $seaRouteCoords,
-                'traveled_path' => $splitRoute['traveled'],
-                'remaining_path' => $splitRoute['remaining'],
+                'traveled_path' => $traveledPath,
+                'remaining_path' => $remainingPath,
                 'detail_url' => route('shipments.show', $s->id),
             ];
         });
@@ -267,6 +260,7 @@ class MapController extends Controller
             'delivered' => $mapShipments->where('status_type', 'DELIVERED')->count(),
             'in_transit' => $mapShipments->where('status_type', 'IN_TRANSIT')->count(),
             'delayed' => $mapShipments->where('status_type', 'DELAYED')->count(),
+            'staged' => $mapShipments->where('status_type', 'STAGED')->count(),
             'west_sector' => $mapShipments->where('is_west_sector', true)->count(),
             'signal_offline' => $mapShipments->where('is_signal_offline', true)->count(),
             'coffee' => $mapShipments->filter(fn($s) => $s['commodity'] === 'COFFEE')->count(),

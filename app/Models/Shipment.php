@@ -307,7 +307,7 @@ class Shipment extends Model
         $latestEvent = $this->trackingEvents()
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->orderBy('event_time', 'desc')
+            ->reorder('event_time', 'desc')
             ->first();
 
         if ($latestEvent) {
