@@ -939,7 +939,7 @@ class DatabaseSeeder extends Seeder
                 'delay_hours' => 0.00,
                 'delay_severity' => Shipment::SEVERITY_NONE,
                 'delay_reason' => null,
-                'instructions' => 'Trans-Pacific & Panama Canal routing. Continuous hygrometer monitoring.',
+                'instructions' => 'Global Maritime Express via Suez Canal & North Atlantic Ocean. Continuous hygrometer monitoring.',
                 'items' => [
                     [
                         'category' => ShipmentItem::CATEGORY_COFFEE,
@@ -956,9 +956,10 @@ class DatabaseSeeder extends Seeder
                 'exception' => null,
                 'waypoints' => [
                     ['time_sub_days' => 16, 'loc' => $dad, 'desc' => 'Vessel Maersk Mc-Kinney Moller departed Da Nang.'],
-                    ['time_sub_days' => 12, 'loc' => null, 'name' => 'Pacific Ocean Equatorial Lane', 'lat' => 15.2000, 'lon' => 145.3000, 'desc' => 'Sailing eastbound at 21 knots.'],
-                    ['time_sub_days' => 4, 'loc' => null, 'name' => 'Panama Canal Pacific Anchorage', 'lat' => 8.9000, 'lon' => -79.5500, 'desc' => 'Panama Canal transit booked for northbound lock passage.'],
-                    ['time_sub_days' => 1, 'loc' => null, 'name' => 'Caribbean Sea East of Jamaica', 'lat' => 17.8000, 'lon' => -74.2000, 'desc' => 'Sailing northward toward US East Coast. On time for New York arrival.'],
+                    ['time_sub_days' => 12, 'loc' => $sin, 'desc' => 'Port of Singapore Transshipment passage completed.'],
+                    ['time_sub_days' => 6, 'loc' => null, 'name' => 'Suez Canal Transit Convoy', 'lat' => 30.6000, 'lon' => 32.3500, 'desc' => 'Northbound convoy transit completed on schedule.'],
+                    ['time_sub_days' => 3, 'loc' => null, 'name' => 'Strait of Gibraltar Gateway', 'lat' => 35.9500, 'lon' => -5.6000, 'desc' => 'Entering North Atlantic Ocean shipping lane toward US East Coast.'],
+                    ['time_sub_days' => 1, 'loc' => null, 'name' => 'North Atlantic Ocean Corridor', 'lat' => 37.5000, 'lon' => -48.0000, 'desc' => 'Cruising westbound at 21 knots. On time for New York arrival.'],
                 ]
             ],
         ];

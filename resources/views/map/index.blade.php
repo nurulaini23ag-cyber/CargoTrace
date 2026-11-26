@@ -851,7 +851,7 @@
                 // 3. Proses Asal (Staged / Belum Berlayar) -> Kuning Amber (#d97706)
                 // 4. Sedang Berlayar (In Transit Normal) -> Biru Samudra (#0284c7)
                 let hullColor = '#0284c7';
-                let badgeColorClass = 'bg-blue-600 text-white';
+                let badgeColorClass = 'bg-sky-600 text-white';
                 let statusDot = '🔵';
 
                 if (isDelivered) {
@@ -868,40 +868,57 @@
                     statusDot = '📦';
                 }
 
+                const compassDir = getCompassDirection(pos.bearing);
+                const compassShort = compassDir.split(' ')[0];
+                const bearingDeg = Math.round(pos.bearing || 0);
+
                 const vesselMarkerHtml = `
-                    <div class="relative flex flex-col items-center pointer-events-auto cursor-pointer" style="width: 140px; height: 72px;">
+                    <div class="relative flex flex-col items-center pointer-events-auto cursor-pointer" style="width: 160px; height: 86px;">
                         
-                        <!-- Floating Vessel Name & Status Badge -->
-                        <div class="${badgeColorClass} font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap mb-1 flex items-center gap-1 border border-white/60">
+                        <!-- Floating Vessel Name & Direction Badge -->
+                        <div class="${badgeColorClass} font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap mb-1 flex items-center gap-1.5 border border-white/70">
                             <span>${statusDot}</span>
                             <span>${s.vessel_name}</span>
+                            <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-black/30 text-white font-bold">${bearingDeg}° ${compassShort}</span>
                         </div>
 
                         <!-- Top-Down Nautical Navigation Vessel (Bow Points UP at 0deg) -->
-                        <div class="relative w-8 h-12 flex items-center justify-center transform transition-transform duration-300" style="transform: rotate(${Math.round(pos.bearing || 0)}deg);">
+                        <div class="relative w-9 h-14 flex items-center justify-center transform transition-transform duration-300" style="transform: rotate(${bearingDeg}deg); transform-origin: 50% 50%;">
                             ${isDelayed ? `
-                                <div class="absolute -top-1 w-10 h-10 rounded-full bg-rose-500/40 border-2 border-rose-500 animate-ping"></div>
+                                <div class="absolute -top-2 w-12 h-12 rounded-full bg-rose-500/35 border-2 border-rose-500 animate-ping"></div>
                             ` : (!isDelivered && !isStaged ? `
-                                <div class="absolute -top-1 w-8 h-8 rounded-full bg-blue-400/30 animate-pulse"></div>
+                                <div class="absolute -top-1 w-10 h-10 rounded-full bg-sky-400/25 animate-pulse"></div>
                             ` : '')}
 
-                            <svg width="32" height="48" viewBox="0 0 32 48" fill="none">
+                            <svg width="36" height="54" viewBox="0 0 36 54" fill="none" class="overflow-visible">
+                                <!-- Forward Nautical Radar Heading Beam (Points Forward from Bow) -->
+                                ${!isDelivered && !isStaged ? `
+                                    <polygon points="18,-1 9,-18 27,-18" fill="${hullColor}" fill-opacity="0.3"/>
+                                    <line x1="18" y1="-1" x2="18" y2="-22" stroke="${hullColor}" stroke-width="2" stroke-dasharray="2,2"/>
+                                ` : ''}
+
                                 <!-- Hull Shadow -->
-                                <path d="M16 2 C22 10 28 20 28 42 C22 45 10 45 4 42 C4 20 10 10 16 2 Z" fill="#0f172a" fill-opacity="0.35"/>
-                                <!-- Main Ship Hull (Bow Pointed Up at Y=3) -->
-                                <path d="M16 3 C21.5 11 26.5 20 26.5 40 C21 42.5 11 42.5 5.5 40 C5.5 20 10.5 11 16 3 Z" fill="${hullColor}" stroke="#0f172a" stroke-width="1.8"/>
-                                <!-- Deck Well -->
-                                <path d="M16 7 C19.5 13 23 20 23 37 C19 39 13 39 9 37 C9 20 12.5 13 16 7 Z" fill="#334155"/>
+                                <path d="M18 2 C25 11 31 22 31 46 C25 49 11 49 5 46 C5 22 11 11 18 2 Z" fill="#0f172a" fill-opacity="0.35"/>
+                                
+                                <!-- Main Ship Hull (Bow Pointed Up at Y=4) -->
+                                <path d="M18 4 C24.5 12 30 22 30 45 C23.5 47.5 12.5 47.5 6 45 C6 22 11.5 12 18 4 Z" fill="${hullColor}" stroke="#0f172a" stroke-width="1.8"/>
+                                
+                                <!-- Cargo Hold Well -->
+                                <path d="M18 9 C22 15 26 23 26 42 C22 43.5 14 43.5 10 42 C10 23 14 15 18 9 Z" fill="#1e293b"/>
+                                
                                 <!-- Cargo Container Stacks -->
-                                <rect x="10.5" y="15" width="5" height="8" rx="0.8" fill="${isCoffee ? '#92400e' : '#ea580c'}" stroke="#1e293b" stroke-width="0.6"/>
-                                <rect x="16.5" y="15" width="5" height="8" rx="0.8" fill="#f59e0b" stroke="#1e293b" stroke-width="0.6"/>
-                                <rect x="10.5" y="24" width="5" height="8" rx="0.8" fill="${hullColor}" stroke="#1e293b" stroke-width="0.6"/>
-                                <rect x="16.5" y="24" width="5" height="8" rx="0.8" fill="${isCoffee ? '#78350f' : '#c2410c'}" stroke="#1e293b" stroke-width="0.6"/>
-                                <!-- Bridge Superstructure at Stern -->
-                                <rect x="10.5" y="33" width="11" height="4.5" rx="1" fill="#f8fafc" stroke="#64748b" stroke-width="0.8"/>
-                                <rect x="12" y="34" width="8" height="1.5" rx="0.4" fill="#38bdf8"/>
-                                <!-- Directional Navigation Bow Arrow -->
-                                <polygon points="16,4 19,11 13,11" fill="#ffffff"/>
+                                <rect x="11.5" y="17" width="5.5" height="8" rx="1" fill="${isCoffee ? '#92400e' : '#ea580c'}" stroke="#0f172a" stroke-width="0.6"/>
+                                <rect x="19" y="17" width="5.5" height="8" rx="1" fill="#f59e0b" stroke="#0f172a" stroke-width="0.6"/>
+                                <rect x="11.5" y="27" width="5.5" height="8" rx="1" fill="${hullColor}" stroke="#0f172a" stroke-width="0.6"/>
+                                <rect x="19" y="27" width="5.5" height="8" rx="1" fill="${isCoffee ? '#78350f' : '#c2410c'}" stroke="#0f172a" stroke-width="0.6"/>
+                                
+                                <!-- Wheelhouse Superstructure at Stern (Dark Naval Structure) -->
+                                <rect x="11.5" y="37" width="13" height="5" rx="1.2" fill="#334155" stroke="#475569" stroke-width="0.8"/>
+                                <rect x="13.5" y="38" width="9" height="1.8" rx="0.4" fill="#38bdf8"/>
+                                
+                                <!-- High-Visibility Directional Navigation Bow Prow Arrow (Points FORWARD at Bow) -->
+                                <polygon points="18,-1 25,11 18,8 11,11" fill="#ffffff" stroke="#0f172a" stroke-width="1.6"/>
+                                <polygon points="18,1 23,10 18,7.5 13,10" fill="${hullColor}"/>
                             </svg>
                         </div>
                     </div>
@@ -911,9 +928,9 @@
                     icon: L.divIcon({
                         html: vesselMarkerHtml,
                         className: 'gmap-vessel-marker',
-                        iconSize: [140, 72],
-                        iconAnchor: [70, 46],
-                        popupAnchor: [0, -46]
+                        iconSize: [160, 86],
+                        iconAnchor: [80, 52],
+                        popupAnchor: [0, -52]
                     }),
                     zIndexOffset: isDelayed ? 950 : (isDelivered ? 850 : (isStaged ? 800 : 900))
                 }).addTo(fleetMap);

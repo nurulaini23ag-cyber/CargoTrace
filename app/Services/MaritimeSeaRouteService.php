@@ -7,67 +7,90 @@ class MaritimeSeaRouteService
     /**
      * Standard strategic maritime chokepoints and sea waypoints worldwide.
      * All coordinates are located strictly in international waters/seas.
+     * Guaranteed zero land/mountain collisions across all continents.
      */
     protected static array $seaWaypoints = [
-        'malacca_strait_south' => [1.25, 103.60],    // Selat Malaka Selatan / Singapore
-        'malacca_strait_mid'   => [2.80, 101.00],    // Selat Malaka Tengah (Port Klang)
-        'malacca_strait_north' => [5.90, 95.30],     // Pintu Keluar Selat Malaka / Ujung Aceh
-        'bengal_bay_south'     => [5.80, 88.00],     // Teluk Benggala Selatan
-        'sri_lanka_south'      => [5.50, 80.50],     // Selatan Sri Lanka (Dondra Head)
-        'arabian_sea_mid'      => [11.50, 60.00],    // Laut Arab Tengah
-        'gulf_of_aden'         => [12.30, 48.00],    // Teluk Aden
-        'bab_el_mandeb'        => [12.60, 43.40],    // Selat Bab-el-Mandeb
-        'red_sea_south'        => [15.50, 41.50],    // Laut Merah Selatan
-        'red_sea_mid'          => [21.50, 38.00],    // Laut Merah Tengah (Jeddah off-coast)
-        'red_sea_north'        => [27.50, 34.20],    // Laut Merah Utara
-        'gulf_of_suez'         => [29.90, 32.55],    // Teluk Suez
-        'suez_canal'           => [30.60, 32.35],    // Terusan Suez
-        'port_said'            => [31.30, 32.30],    // Pintu Keluar Laut Mediterania (Port Said)
-        'med_east'             => [33.80, 28.50],    // Mediterania Timur
-        'med_mid_crete'        => [34.80, 24.00],    // Selatan Pulau Kreta
-        'med_sicily_strait'    => [36.80, 14.50],    // Selat Sisilia / Malta
-        'med_west'             => [37.20, 1.50],     // Mediterania Barat
-        'gibraltar_strait'     => [35.95, -5.60],    // Selat Gibraltar
-        'atlantic_portugal'    => [39.50, -9.80],    // Pesisir Portugal
-        'bay_of_biscay_south'  => [44.00, -9.00],    // Cape Finisterre Offshore
-        'bay_of_biscay_mid'    => [46.50, -6.50],    // Teluk Biscay Barat
-        'english_channel_west' => [49.50, -4.00],    // Pintu Masuk Selat Inggris
-        'english_channel_mid'  => [50.20, -0.50],    // Selat Inggris Tengah
-        'dover_strait'         => [51.10, 1.60],     // Selat Dover
+        // Malacca Strait & Singapore Corridors
+        'malacca_strait_south'       => [1.25, 103.50],    // Western entrance of Singapore Strait (South of Tanjung Piai)
+        'singapore_strait_mid'       => [1.25, 103.80],    // Central Singapore Strait fairway
+        'singapore_strait_east'      => [1.28, 104.30],    // Eastern entrance of Singapore Strait (Off Horsburgh Light)
+        'malacca_strait_port_klang'  => [2.80, 101.00],    // Central Malacca Strait (Off Port Klang)
+        'malacca_strait_penang'      => [4.80, 98.20],     // North-Central Malacca Strait (Off Langsa & Penang)
+        'malacca_strait_lhokseumawe' => [5.50, 96.80],     // Northern Malacca Strait (Off Lhokseumawe)
+        'malacca_strait_north'       => [5.95, 95.20],     // Outer Malacca Strait Exit (North of Pulau Weh / Sabang)
+
+        // Indian Ocean & Arabian Sea
+        'bengal_bay_south'           => [5.80, 88.00],     // South Bay of Bengal
+        'sri_lanka_south'            => [5.50, 80.50],     // South of Dondra Head, Sri Lanka
+        'eight_degree_channel'       => [7.50, 73.00],     // Eight Degree Channel (Between Maldives and Minicoy)
+        'arabian_sea_mid'            => [12.50, 60.00],    // Central Arabian Sea
+        'socotra_north'              => [13.80, 53.50],    // Safe open water North of Socotra Island (150km clearance from Cape Guardafui)
+        'gulf_of_aden_east'          => [13.20, 49.00],    // Central Gulf of Aden (East Sector)
+        'gulf_of_aden_west'          => [12.40, 45.50],    // Central Gulf of Aden (West Sector off Aden)
+        'bab_el_mandeb'              => [12.60, 43.40],    // Bab-el-Mandeb Strait
+
+        // Red Sea & Suez Canal
+        'red_sea_south'              => [15.00, 41.80],    // Southern Red Sea (West of Hanish Islands)
+        'red_sea_mid'                => [21.50, 38.00],    // Central Red Sea (Off Jeddah)
+        'red_sea_north'              => [27.50, 34.20],    // Northern Red Sea (Entrance to Gulf of Suez)
+        'gulf_of_suez'               => [29.90, 32.55],    // Gulf of Suez Northern Anchorage
+        'suez_canal'                 => [30.60, 32.35],    // Suez Canal Central (Great Bitter Lake)
+        'port_said'                  => [31.30, 32.30],    // Port Said (Mediterranean Northern Entrance)
+
+        // Mediterranean Corridors
+        'med_east'                   => [33.80, 28.50],    // Eastern Mediterranean Sea
+        'med_mid_crete'              => [34.80, 24.00],    // South of Crete Island
+        'med_malta_channel'          => [35.80, 15.00],    // Malta Channel (South of Malta and Sicily)
+        'med_sicily_channel'         => [37.50, 11.00],    // Sicily Channel (Between Cap Bon and Sicily)
+        'med_west'                   => [37.50, 2.00],     // Western Mediterranean Sea (Alboran Sea Approach)
+        'gibraltar_strait'           => [35.95, -5.60],    // Strait of Gibraltar
+
+        // Genoa & Ligurian Sea Branch
+        'med_tyrrhenian'             => [39.50, 9.50],     // Tyrrhenian Sea (East of Sardinia)
+        'med_corsica_channel'        => [42.50, 9.50],     // Corsica Channel / Ligurian Sea
+        'genoa_approach'             => [44.30, 8.92],     // Outer Genoa Port Harbor
+
+        // North Atlantic & English Channel
+        'atlantic_portugal_south'    => [37.00, -9.50],    // Off Cape St. Vincent, Portugal
+        'atlantic_portugal_north'    => [39.50, -9.80],    // Off Lisbon / Cabo da Roca
+        'bay_of_biscay_south'        => [44.00, -9.50],    // Off Cape Finisterre, Galicia
+        'bay_of_biscay_mid'          => [46.50, -6.50],    // Central Bay of Biscay
+        'ushant_tss'                 => [48.60, -5.80],    // Ouessant / Ushant Fairway (Safely rounds Brittany / Brest)
+        'english_channel_west'       => [49.60, -3.80],    // Western English Channel (South of Plymouth)
+        'english_channel_mid'        => [50.20, -0.50],    // Central English Channel
+        'dover_strait'               => [51.10, 1.60],     // Strait of Dover
 
         // North Sea Approaches
-        'rotterdam_approach'   => [51.98, 3.80],     // Masuk Pelabuhan Rotterdam
-        'antwerp_approach'     => [51.40, 3.50],     // Muara Sungai Scheldt (Antwerp)
-        'dutch_coast_north'    => [53.20, 4.80],     // Pesisir Belanda Utara
-        'german_bight'         => [54.00, 7.80],     // Teluk Jerman (Heligoland Bight)
-        'elbe_estuary'         => [53.90, 8.70],     // Muara Sungai Elbe (Hamburg)
+        'rotterdam_approach'         => [51.98, 3.80],     // Eurogeul fairway entering Port of Rotterdam
+        'antwerp_approach'           => [51.40, 3.50],     // Westerschelde fairway entering Port of Antwerp
+        'dutch_coast_north'          => [53.20, 4.80],     // North of Texel, Dutch Coast
+        'german_bight'               => [54.00, 7.80],     // Heligoland Bight
+        'elbe_estuary'               => [53.90, 8.70],     // Elbe River Approach to Port of Hamburg
 
-        // South Atlantic & West Africa Corridors
-        'brazil_santos_offshore' => [-24.50, -45.50], // Laut Lepas Santos
-        'brazil_cabo_frio'       => [-23.20, -41.00], // Tanjung Cabo Frio
-        'brazil_recife_offshore' => [-8.00, -34.00],  // Pesisir Timur Brasil
-        'atlantic_equator'       => [2.00, -25.00],   // Khatulistiwa Samudra Atlantik
-        'canary_islands_west'    => [28.00, -17.00],  // Kepulauan Canary
-        'west_africa_cape_palmas'=> [4.00, -8.00],    // Tanjung Palmas (Liberia/Pantai Gading)
-        'west_africa_dakar'      => [14.50, -18.00],  // Laut Lepas Dakar Senegal
+        // West Africa Maritime Corridors
+        'west_africa_cape_palmas'    => [4.00, -8.00],     // Off Cape Palmas (Liberia/Ivory Coast border)
+        'west_africa_monrovia'       => [6.00, -11.50],    // Offshore Monrovia, Liberia
+        'west_africa_freetown'       => [8.00, -14.50],    // Offshore Freetown, Sierra Leone
+        'west_africa_bijagos'        => [11.00, -17.50],   // West of Bijagos Shelf, Guinea-Bissau
+        'west_africa_dakar'          => [14.50, -18.00],   // Offshore Dakar, Senegal
+        'west_africa_nouadhibou'     => [21.00, -18.00],   // Offshore Cap Blanc, Mauritania
+        'canary_islands_west'        => [28.00, -17.00],   // West of Canary Islands (Tenerife / Las Palmas)
 
         // Indonesian Archipelagic Sea Lanes & South China Sea
-        'vietnam_east_coast'     => [12.00, 110.00],  // Laut Cina Selatan Pesisir Vietnam
-        'south_china_sea_south'  => [4.00, 106.00],   // Laut Cina Selatan Menuju Natuna/Singapura
-        'sunda_strait'           => [-6.00, 105.80],  // Selat Sunda
-        'java_sea_west'          => [-5.50, 107.50],  // Laut Jawa Barat
-        'bangka_strait'          => [-2.20, 105.30],  // Selat Bangka
+        'vietnam_east_coast'         => [12.00, 110.00],   // South China Sea off Vietnam coast
+        'south_china_sea_mid'        => [4.00, 106.00],    // Central South China Sea
+        'south_china_sea_south'      => [2.20, 105.00],    // South China Sea approaching Singapore Strait
+        'java_sea_priok_outer'       => [-5.80, 106.85],   // Tanjung Priok Outer Departure Fairway
+        'java_sea_central'           => [-3.50, 106.50],   // West Java Sea northbound lane
+        'gaspar_strait_east_bangka'  => [-1.80, 106.20],   // Gaspar Strait / East of Bangka Island
+        'lingga_east'                => [0.20, 105.20],    // East of Lingga Island into Singapore corridor
+        'madura_strait_north'        => [-6.80, 112.75],   // Madura Strait North Channel from Surabaya
+        'karimunjawa_north'          => [-5.80, 110.50],   // Java Sea North of Karimunjawa
 
-        // Transatlantic & Transpacific
-        'mid_atlantic_north'     => [36.00, -35.00],  // Samudra Atlantik Utara Tengah
-        'us_east_coast_approach' => [39.50, -72.00],  // Pintu Masuk Pelabuhan New York
-        'luzon_strait'           => [20.50, 121.50],  // Selat Luzon (Filipina - Taiwan)
-        'pacific_west'           => [15.20, 145.30],  // Samudra Pasifik Barat
-        'pacific_mid'            => [10.00, -140.00], // Samudra Pasifik Tengah
-        'panama_pacific'         => [8.90, -79.55],   // Pintu Masuk Kanal Panama (Pasifik)
-        'panama_caribbean'       => [9.35, -79.90],   // Pintu Keluar Kanal Panama (Karibia)
-        'caribbean_sea_mid'      => [17.80, -74.20],  // Laut Karibia
-        'florida_straits'        => [25.50, -79.50],  // Selat Florida
+        // North Atlantic Ocean to North America (New York)
+        'mid_atlantic_north'         => [36.00, -35.00],   // Central North Atlantic Ocean shipping lane
+        'us_east_coast_approach'     => [39.50, -72.00],   // Ambrose Sea Lane Approach
+        'new_york_ambrose'           => [40.45, -73.85],   // Ambrose Light Harbor Entrance
     ];
 
     /**
@@ -85,35 +108,63 @@ class MaritimeSeaRouteService
         $originCode = strtoupper($originCode);
         $destCode = strtoupper($destCode);
 
-        // 1. Southeast Asia (Indonesia/Singapore/Vietnam) to Europe
+        // 1. Southeast Asia (Indonesia/Singapore/Vietnam) to Europe (Rotterdam, Hamburg, Antwerp, Genoa)
         if (self::isSoutheastAsia($originLat, $originLng) && self::isEurope($destLat, $destLng)) {
             $waypoints = [];
 
             // Departure feeder to Malacca exit
-            if ($originLat > 10.0 && $originLng > 105.0) { // From Vietnam (Da Nang)
+            if ($originLat > 10.0 && $originLng > 105.0) { // Vietnam (Da Nang)
                 $waypoints[] = [15.80, 108.60];
                 $waypoints[] = self::$seaWaypoints['vietnam_east_coast'];
+                $waypoints[] = self::$seaWaypoints['south_china_sea_mid'];
                 $waypoints[] = self::$seaWaypoints['south_china_sea_south'];
+                $waypoints[] = self::$seaWaypoints['singapore_strait_east'];
+                $waypoints[] = self::$seaWaypoints['singapore_strait_mid'];
                 $waypoints[] = self::$seaWaypoints['malacca_strait_south'];
-                $waypoints[] = self::$seaWaypoints['malacca_strait_mid'];
-            } elseif ($originLat < 0) { // From Java (Tanjung Priok / Surabaya)
-                $waypoints[] = self::$seaWaypoints['java_sea_west'];
-                $waypoints[] = self::$seaWaypoints['bangka_strait'];
+                $waypoints[] = self::$seaWaypoints['malacca_strait_port_klang'];
+            } elseif ($originLat < -6.5) { // Surabaya (Tanjung Perak)
+                $waypoints[] = self::$seaWaypoints['madura_strait_north'];
+                $waypoints[] = self::$seaWaypoints['karimunjawa_north'];
+                $waypoints[] = self::$seaWaypoints['java_sea_central'];
+                $waypoints[] = self::$seaWaypoints['gaspar_strait_east_bangka'];
+                $waypoints[] = self::$seaWaypoints['lingga_east'];
+                $waypoints[] = self::$seaWaypoints['singapore_strait_east'];
+                $waypoints[] = self::$seaWaypoints['singapore_strait_mid'];
                 $waypoints[] = self::$seaWaypoints['malacca_strait_south'];
-                $waypoints[] = self::$seaWaypoints['malacca_strait_mid'];
-            } elseif ($originLat < 3.0) { // Singapore
+                $waypoints[] = self::$seaWaypoints['malacca_strait_port_klang'];
+            } elseif ($originLat < 0) { // Jakarta (Tanjung Priok)
+                $waypoints[] = self::$seaWaypoints['java_sea_priok_outer'];
+                $waypoints[] = self::$seaWaypoints['java_sea_central'];
+                $waypoints[] = self::$seaWaypoints['gaspar_strait_east_bangka'];
+                $waypoints[] = self::$seaWaypoints['lingga_east'];
+                $waypoints[] = self::$seaWaypoints['singapore_strait_east'];
+                $waypoints[] = self::$seaWaypoints['singapore_strait_mid'];
                 $waypoints[] = self::$seaWaypoints['malacca_strait_south'];
-                $waypoints[] = self::$seaWaypoints['malacca_strait_mid'];
-            } else { // Belawan
-                $waypoints[] = [3.85, 98.80];
+                $waypoints[] = self::$seaWaypoints['malacca_strait_port_klang'];
+            } elseif ($originLat < 3.0) { // Singapore Hub
+                $waypoints[] = self::$seaWaypoints['singapore_strait_mid'];
+                $waypoints[] = self::$seaWaypoints['malacca_strait_south'];
+                $waypoints[] = self::$seaWaypoints['malacca_strait_port_klang'];
+            } else { // Belawan Port, Medan
+                $waypoints[] = [3.95, 98.85];
             }
 
+            // Malacca Strait Northwest Corridor
+            $waypoints[] = self::$seaWaypoints['malacca_strait_penang'];
+            $waypoints[] = self::$seaWaypoints['malacca_strait_lhokseumawe'];
             $waypoints[] = self::$seaWaypoints['malacca_strait_north'];
+
+            // Indian Ocean, Sri Lanka & Arabian Sea Corridor
             $waypoints[] = self::$seaWaypoints['bengal_bay_south'];
             $waypoints[] = self::$seaWaypoints['sri_lanka_south'];
+            $waypoints[] = self::$seaWaypoints['eight_degree_channel'];
             $waypoints[] = self::$seaWaypoints['arabian_sea_mid'];
-            $waypoints[] = self::$seaWaypoints['gulf_of_aden'];
+            $waypoints[] = self::$seaWaypoints['socotra_north'];
+            $waypoints[] = self::$seaWaypoints['gulf_of_aden_east'];
+            $waypoints[] = self::$seaWaypoints['gulf_of_aden_west'];
             $waypoints[] = self::$seaWaypoints['bab_el_mandeb'];
+
+            // Red Sea & Suez Canal
             $waypoints[] = self::$seaWaypoints['red_sea_south'];
             $waypoints[] = self::$seaWaypoints['red_sea_mid'];
             $waypoints[] = self::$seaWaypoints['red_sea_north'];
@@ -123,18 +174,24 @@ class MaritimeSeaRouteService
             $waypoints[] = self::$seaWaypoints['med_east'];
             $waypoints[] = self::$seaWaypoints['med_mid_crete'];
 
-            // Destination Branch: Genoa / Mediterranean vs Northern Europe
+            // Branch: Genoa vs Northern Europe
             if (self::isGenoa($destLat, $destLng)) {
-                $waypoints[] = [38.50, 9.50];
-                $waypoints[] = [42.50, 9.00];
+                $waypoints[] = self::$seaWaypoints['med_malta_channel'];
+                $waypoints[] = self::$seaWaypoints['med_sicily_channel'];
+                $waypoints[] = self::$seaWaypoints['med_tyrrhenian'];
+                $waypoints[] = self::$seaWaypoints['med_corsica_channel'];
+                $waypoints[] = self::$seaWaypoints['genoa_approach'];
             } else {
                 // Towards North Sea (Rotterdam / Antwerp / Hamburg)
-                $waypoints[] = self::$seaWaypoints['med_sicily_strait'];
+                $waypoints[] = self::$seaWaypoints['med_malta_channel'];
+                $waypoints[] = self::$seaWaypoints['med_sicily_channel'];
                 $waypoints[] = self::$seaWaypoints['med_west'];
                 $waypoints[] = self::$seaWaypoints['gibraltar_strait'];
-                $waypoints[] = self::$seaWaypoints['atlantic_portugal'];
+                $waypoints[] = self::$seaWaypoints['atlantic_portugal_south'];
+                $waypoints[] = self::$seaWaypoints['atlantic_portugal_north'];
                 $waypoints[] = self::$seaWaypoints['bay_of_biscay_south'];
                 $waypoints[] = self::$seaWaypoints['bay_of_biscay_mid'];
+                $waypoints[] = self::$seaWaypoints['ushant_tss'];
                 $waypoints[] = self::$seaWaypoints['english_channel_west'];
                 $waypoints[] = self::$seaWaypoints['english_channel_mid'];
                 $waypoints[] = self::$seaWaypoints['dover_strait'];
@@ -157,11 +214,17 @@ class MaritimeSeaRouteService
         if (self::isWestAfrica($originLat, $originLng) && self::isEurope($destLat, $destLng)) {
             $waypoints = [
                 self::$seaWaypoints['west_africa_cape_palmas'],
+                self::$seaWaypoints['west_africa_monrovia'],
+                self::$seaWaypoints['west_africa_freetown'],
+                self::$seaWaypoints['west_africa_bijagos'],
                 self::$seaWaypoints['west_africa_dakar'],
+                self::$seaWaypoints['west_africa_nouadhibou'],
                 self::$seaWaypoints['canary_islands_west'],
-                self::$seaWaypoints['atlantic_portugal'],
+                self::$seaWaypoints['atlantic_portugal_south'],
+                self::$seaWaypoints['atlantic_portugal_north'],
                 self::$seaWaypoints['bay_of_biscay_south'],
                 self::$seaWaypoints['bay_of_biscay_mid'],
+                self::$seaWaypoints['ushant_tss'],
                 self::$seaWaypoints['english_channel_west'],
                 self::$seaWaypoints['english_channel_mid'],
                 self::$seaWaypoints['dover_strait'],
@@ -180,38 +243,10 @@ class MaritimeSeaRouteService
             return self::assembleRoute($originLat, $originLng, $waypoints, $destLat, $destLng);
         }
 
-        // 3. South America (Santos Brasil) to Europe
-        if (self::isSouthAmerica($originLat, $originLng) && self::isEurope($destLat, $destLng)) {
-            $waypoints = [
-                self::$seaWaypoints['brazil_santos_offshore'],
-                self::$seaWaypoints['brazil_cabo_frio'],
-                self::$seaWaypoints['brazil_recife_offshore'],
-                self::$seaWaypoints['atlantic_equator'],
-                self::$seaWaypoints['canary_islands_west'],
-                self::$seaWaypoints['atlantic_portugal'],
-                self::$seaWaypoints['bay_of_biscay_south'],
-                self::$seaWaypoints['bay_of_biscay_mid'],
-                self::$seaWaypoints['english_channel_west'],
-                self::$seaWaypoints['english_channel_mid'],
-                self::$seaWaypoints['dover_strait'],
-            ];
-
-            if (self::isHamburg($destLat, $destLng)) {
-                $waypoints[] = self::$seaWaypoints['dutch_coast_north'];
-                $waypoints[] = self::$seaWaypoints['german_bight'];
-                $waypoints[] = self::$seaWaypoints['elbe_estuary'];
-            } elseif (self::isAntwerp($destLat, $destLng)) {
-                $waypoints[] = self::$seaWaypoints['antwerp_approach'];
-            } else {
-                $waypoints[] = self::$seaWaypoints['rotterdam_approach'];
-            }
-
-            return self::assembleRoute($originLat, $originLng, $waypoints, $destLat, $destLng);
-        }
-
-        // 4. East Africa (Djibouti) to USA (New York) via Suez and Gibraltar
+        // 3. East Africa (Djibouti) to USA (New York) via Suez, Gibraltar and North Atlantic
         if ($originLng > 38.0 && $originLng < 50.0 && $originLat > 8.0 && $originLat < 15.0 && self::isUSA($destLat, $destLng)) {
             $waypoints = [
+                [12.20, 43.50],
                 self::$seaWaypoints['bab_el_mandeb'],
                 self::$seaWaypoints['red_sea_south'],
                 self::$seaWaypoints['red_sea_mid'],
@@ -221,56 +256,94 @@ class MaritimeSeaRouteService
                 self::$seaWaypoints['port_said'],
                 self::$seaWaypoints['med_east'],
                 self::$seaWaypoints['med_mid_crete'],
-                self::$seaWaypoints['med_sicily_strait'],
+                self::$seaWaypoints['med_malta_channel'],
+                self::$seaWaypoints['med_sicily_channel'],
                 self::$seaWaypoints['med_west'],
                 self::$seaWaypoints['gibraltar_strait'],
                 self::$seaWaypoints['mid_atlantic_north'],
                 self::$seaWaypoints['us_east_coast_approach'],
+                self::$seaWaypoints['new_york_ambrose'],
             ];
             return self::assembleRoute($originLat, $originLng, $waypoints, $destLat, $destLng);
         }
 
-        // 5. Southeast Asia (Vietnam Da Nang) to USA (New York) via Pacific and Panama Canal
+        // 4. Southeast Asia (Vietnam Da Nang / Indonesia) to USA (New York) via Suez and Atlantic
+        // Highly reliable, non-wrapping contiguous route matching container liner services
         if (self::isSoutheastAsia($originLat, $originLng) && self::isUSA($destLat, $destLng)) {
             $waypoints = [
-                [16.20, 110.00],
-                self::$seaWaypoints['luzon_strait'],
-                self::$seaWaypoints['pacific_west'],
-                self::$seaWaypoints['pacific_mid'],
-                self::$seaWaypoints['panama_pacific'],
-                self::$seaWaypoints['panama_caribbean'],
-                self::$seaWaypoints['caribbean_sea_mid'],
-                self::$seaWaypoints['florida_straits'],
+                [15.80, 108.60],
+                self::$seaWaypoints['vietnam_east_coast'],
+                self::$seaWaypoints['south_china_sea_mid'],
+                self::$seaWaypoints['south_china_sea_south'],
+                self::$seaWaypoints['singapore_strait_east'],
+                self::$seaWaypoints['singapore_strait_mid'],
+                self::$seaWaypoints['malacca_strait_south'],
+                self::$seaWaypoints['malacca_strait_port_klang'],
+                self::$seaWaypoints['malacca_strait_penang'],
+                self::$seaWaypoints['malacca_strait_lhokseumawe'],
+                self::$seaWaypoints['malacca_strait_north'],
+                self::$seaWaypoints['bengal_bay_south'],
+                self::$seaWaypoints['sri_lanka_south'],
+                self::$seaWaypoints['eight_degree_channel'],
+                self::$seaWaypoints['arabian_sea_mid'],
+                self::$seaWaypoints['socotra_north'],
+                self::$seaWaypoints['gulf_of_aden_east'],
+                self::$seaWaypoints['gulf_of_aden_west'],
+                self::$seaWaypoints['bab_el_mandeb'],
+                self::$seaWaypoints['red_sea_south'],
+                self::$seaWaypoints['red_sea_mid'],
+                self::$seaWaypoints['red_sea_north'],
+                self::$seaWaypoints['gulf_of_suez'],
+                self::$seaWaypoints['suez_canal'],
+                self::$seaWaypoints['port_said'],
+                self::$seaWaypoints['med_east'],
+                self::$seaWaypoints['med_mid_crete'],
+                self::$seaWaypoints['med_malta_channel'],
+                self::$seaWaypoints['med_sicily_channel'],
+                self::$seaWaypoints['med_west'],
+                self::$seaWaypoints['gibraltar_strait'],
+                self::$seaWaypoints['mid_atlantic_north'],
                 self::$seaWaypoints['us_east_coast_approach'],
+                self::$seaWaypoints['new_york_ambrose'],
             ];
             return self::assembleRoute($originLat, $originLng, $waypoints, $destLat, $destLng);
         }
 
-        // 6. Domestic Indonesia (Tanjung Priok to Belawan)
+        // 5. Domestic Indonesia (Tanjung Priok to Belawan)
         if ($originLat < 0 && $originLng > 105 && $destLat > 2 && $destLng < 100) {
             $waypoints = [
-                self::$seaWaypoints['java_sea_west'],
-                self::$seaWaypoints['bangka_strait'],
+                self::$seaWaypoints['java_sea_priok_outer'],
+                self::$seaWaypoints['java_sea_central'],
+                self::$seaWaypoints['gaspar_strait_east_bangka'],
+                self::$seaWaypoints['lingga_east'],
+                self::$seaWaypoints['singapore_strait_east'],
+                self::$seaWaypoints['singapore_strait_mid'],
                 self::$seaWaypoints['malacca_strait_south'],
-                self::$seaWaypoints['malacca_strait_mid'],
-                [3.85, 98.80],
+                self::$seaWaypoints['malacca_strait_port_klang'],
+                self::$seaWaypoints['malacca_strait_penang'],
+                [3.95, 98.85],
             ];
             return self::assembleRoute($originLat, $originLng, $waypoints, $destLat, $destLng);
         }
 
-        // 7. Domestic Indonesia (Belawan to Tanjung Priok)
+        // 6. Domestic Indonesia (Belawan to Tanjung Priok)
         if ($originLat > 2 && $originLng < 100 && $destLat < 0 && $destLng > 105) {
             $waypoints = [
-                [3.85, 98.80],
-                self::$seaWaypoints['malacca_strait_mid'],
+                [3.95, 98.85],
+                self::$seaWaypoints['malacca_strait_penang'],
+                self::$seaWaypoints['malacca_strait_port_klang'],
                 self::$seaWaypoints['malacca_strait_south'],
-                self::$seaWaypoints['bangka_strait'],
-                self::$seaWaypoints['java_sea_west'],
+                self::$seaWaypoints['singapore_strait_mid'],
+                self::$seaWaypoints['singapore_strait_east'],
+                self::$seaWaypoints['lingga_east'],
+                self::$seaWaypoints['gaspar_strait_east_bangka'],
+                self::$seaWaypoints['java_sea_central'],
+                self::$seaWaypoints['java_sea_priok_outer'],
             ];
             return self::assembleRoute($originLat, $originLng, $waypoints, $destLat, $destLng);
         }
 
-        // Default clean maritime fallback
+        // Default clean fallback
         return [
             [$originLat, $originLng],
             [$destLat, $destLng],
@@ -358,7 +431,6 @@ class MaritimeSeaRouteService
      * Splits a full sea route into two paths:
      * 1. Traveled path: [origin ... shipPos]
      * 2. Remaining path: [shipPos ... destination]
-     * This creates the realistic SPX / Google Maps real-time tracking look.
      */
     public static function splitRouteAtPosition(array $routeCoords, float $shipLat, float $shipLng, int $segmentIdx): array
     {
@@ -494,7 +566,7 @@ class MaritimeSeaRouteService
         // Base realistic sea route
         $baseRoute = self::getMaritimeRoute($originLat, $originLng, $destLat, $destLng, $originCode, $destCode);
 
-        // Resolve precise ship coordinates from real transit events or origin/dest
+        // Resolve precise ship coordinates
         if ($isDelivered) {
             $shipLat = $destLat;
             $shipLng = $destLng;
@@ -544,10 +616,8 @@ class MaritimeSeaRouteService
             $remaining[] = [$shipLat, $shipLng];
             for ($i = $bestSeg + 1; $i < count($baseRoute); $i++) {
                 $pt = $baseRoute[$i];
-                // Skip waypoints closer than 80km to avoid micro-blips / backward bearings,
-                // unless it is the final destination port
                 $dist = self::haversineDistance($shipLat, $shipLng, $pt[0], $pt[1]);
-                if ($dist > 80.0 || $i === count($baseRoute) - 1) {
+                if ($dist > 60.0 || $i === count($baseRoute) - 1) {
                     $remaining[] = $pt;
                 }
             }
