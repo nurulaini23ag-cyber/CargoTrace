@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Public Landing & Tracking Routes (No login required)
+// Public Landing, Tracking & Live Global Fleet Map
 Route::get('/', function () {
     if (Illuminate\Support\Facades\Auth::check()) {
         return redirect()->route('dashboard');
@@ -30,6 +30,8 @@ Route::get('/', function () {
 
 Route::get('/track', [TrackingController::class, 'publicTrack'])->name('tracking.public');
 Route::get('/track/{number}', [TrackingController::class, 'trackNumber'])->name('tracking.search');
+Route::get('/map', [MapController::class, 'index'])->name('map.index');
+Route::get('/api/map/shipments', [MapController::class, 'shipmentsData'])->name('map.data');
 
 // Guest Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -45,10 +47,6 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // Global Live Cargo Fleet Map ("Peta Kargo & Posisi Barang")
-    Route::get('/map', [MapController::class, 'index'])->name('map.index');
-    Route::get('/api/map/shipments', [MapController::class, 'shipmentsData'])->name('map.data');
 
     // Shipments (All authenticated users can browse and view authorized shipments)
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');

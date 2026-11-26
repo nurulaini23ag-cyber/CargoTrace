@@ -324,9 +324,6 @@
 @endsection
 
 @section('scripts')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
 <script>
     const fleetShipments = {!! json_encode($mapShipments) !!};
     let fleetMap;
@@ -457,7 +454,7 @@
      */
     function resetWorldView() {
         clearActiveVesselFocus();
-        if (fleetMap && globalBounds && !globalBounds.isEmpty()) {
+        if (fleetMap && globalBounds && globalBounds.isValid()) {
             fleetMap.fitBounds(globalBounds, { padding: [50, 50], maxZoom: 5 });
         } else if (fleetMap) {
             fleetMap.setView([15.0, 45.0], 3);
@@ -475,7 +472,7 @@
                 myShipBounds.extend([s.current_position.latitude, s.current_position.longitude]);
             }
         });
-        if (!myShipBounds.isEmpty()) {
+        if (myShipBounds.isValid()) {
             fleetMap.fitBounds(myShipBounds, { padding: [50, 50], maxZoom: 6 });
         }
     }
@@ -873,13 +870,13 @@
                 const bearingDeg = Math.round(pos.bearing || 0);
 
                 const vesselMarkerHtml = `
-                    <div class="relative flex flex-col items-center pointer-events-auto cursor-pointer" style="width: 160px; height: 86px;">
+                    <div class="relative flex flex-col items-center pointer-events-auto cursor-pointer group" style="width: 140px; height: 80px;">
                         
                         <!-- Floating Vessel Name & Direction Badge -->
-                        <div class="${badgeColorClass} font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-lg whitespace-nowrap mb-1 flex items-center gap-1.5 border border-white/70">
-                            <span>${statusDot}</span>
-                            <span>${s.vessel_name}</span>
-                            <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-black/30 text-white font-bold">${bearingDeg}° ${compassShort}</span>
+                        <div class="${badgeColorClass} font-black text-[9px] px-2 py-0.5 rounded-full shadow-md whitespace-nowrap mb-1 flex items-center gap-1 border border-white/70 max-w-[135px] truncate transition-transform group-hover:scale-105">
+                            <span class="shrink-0">${statusDot}</span>
+                            <span class="truncate">${s.vessel_name}</span>
+                            <span class="text-[8px] font-mono px-1 py-0.2 rounded bg-black/30 text-white font-bold shrink-0">${bearingDeg}° ${compassShort}</span>
                         </div>
 
                         <!-- Top-Down Nautical Navigation Vessel (Bow Points UP at 0deg) -->
@@ -890,35 +887,35 @@
                                 <div class="absolute -top-1 w-10 h-10 rounded-full bg-sky-400/25 animate-pulse"></div>
                             ` : '')}
 
-                            <svg width="36" height="54" viewBox="0 0 36 54" fill="none" class="overflow-visible">
+                            <svg width="34" height="52" viewBox="0 0 34 52" fill="none" class="overflow-visible">
                                 <!-- Forward Nautical Radar Heading Beam (Points Forward from Bow) -->
                                 ${!isDelivered && !isStaged ? `
-                                    <polygon points="18,-1 9,-18 27,-18" fill="${hullColor}" fill-opacity="0.3"/>
-                                    <line x1="18" y1="-1" x2="18" y2="-22" stroke="${hullColor}" stroke-width="2" stroke-dasharray="2,2"/>
+                                    <polygon points="17,-1 8,-16 26,-16" fill="${hullColor}" fill-opacity="0.3"/>
+                                    <line x1="17" y1="-1" x2="17" y2="-20" stroke="${hullColor}" stroke-width="1.8" stroke-dasharray="2,2"/>
                                 ` : ''}
 
                                 <!-- Hull Shadow -->
-                                <path d="M18 2 C25 11 31 22 31 46 C25 49 11 49 5 46 C5 22 11 11 18 2 Z" fill="#0f172a" fill-opacity="0.35"/>
+                                <path d="M17 2 C24 11 30 22 30 45 C24 48 10 48 4 45 C4 22 10 11 17 2 Z" fill="#0f172a" fill-opacity="0.35"/>
                                 
                                 <!-- Main Ship Hull (Bow Pointed Up at Y=4) -->
-                                <path d="M18 4 C24.5 12 30 22 30 45 C23.5 47.5 12.5 47.5 6 45 C6 22 11.5 12 18 4 Z" fill="${hullColor}" stroke="#0f172a" stroke-width="1.8"/>
+                                <path d="M17 4 C23.5 12 29 22 29 44 C22.5 46.5 11.5 46.5 5 44 C5 22 10.5 12 17 4 Z" fill="${hullColor}" stroke="#0f172a" stroke-width="1.8"/>
                                 
                                 <!-- Cargo Hold Well -->
-                                <path d="M18 9 C22 15 26 23 26 42 C22 43.5 14 43.5 10 42 C10 23 14 15 18 9 Z" fill="#1e293b"/>
+                                <path d="M17 9 C21 15 25 23 25 41 C21 42.5 13 42.5 9 41 C9 23 13 15 17 9 Z" fill="#1e293b"/>
                                 
                                 <!-- Cargo Container Stacks -->
-                                <rect x="11.5" y="17" width="5.5" height="8" rx="1" fill="${isCoffee ? '#92400e' : '#ea580c'}" stroke="#0f172a" stroke-width="0.6"/>
-                                <rect x="19" y="17" width="5.5" height="8" rx="1" fill="#f59e0b" stroke="#0f172a" stroke-width="0.6"/>
-                                <rect x="11.5" y="27" width="5.5" height="8" rx="1" fill="${hullColor}" stroke="#0f172a" stroke-width="0.6"/>
-                                <rect x="19" y="27" width="5.5" height="8" rx="1" fill="${isCoffee ? '#78350f' : '#c2410c'}" stroke="#0f172a" stroke-width="0.6"/>
+                                <rect x="10.5" y="16" width="5.5" height="7.5" rx="1" fill="${isCoffee ? '#92400e' : '#ea580c'}" stroke="#0f172a" stroke-width="0.6"/>
+                                <rect x="18" y="16" width="5.5" height="7.5" rx="1" fill="#f59e0b" stroke="#0f172a" stroke-width="0.6"/>
+                                <rect x="10.5" y="26" width="5.5" height="7.5" rx="1" fill="${hullColor}" stroke="#0f172a" stroke-width="0.6"/>
+                                <rect x="18" y="26" width="5.5" height="7.5" rx="1" fill="${isCoffee ? '#78350f' : '#c2410c'}" stroke="#0f172a" stroke-width="0.6"/>
                                 
                                 <!-- Wheelhouse Superstructure at Stern (Dark Naval Structure) -->
-                                <rect x="11.5" y="37" width="13" height="5" rx="1.2" fill="#334155" stroke="#475569" stroke-width="0.8"/>
-                                <rect x="13.5" y="38" width="9" height="1.8" rx="0.4" fill="#38bdf8"/>
+                                <rect x="10.5" y="36" width="13" height="4.5" rx="1" fill="#334155" stroke="#475569" stroke-width="0.8"/>
+                                <rect x="12.5" y="37" width="9" height="1.6" rx="0.4" fill="#38bdf8"/>
                                 
                                 <!-- High-Visibility Directional Navigation Bow Prow Arrow (Points FORWARD at Bow) -->
-                                <polygon points="18,-1 25,11 18,8 11,11" fill="#ffffff" stroke="#0f172a" stroke-width="1.6"/>
-                                <polygon points="18,1 23,10 18,7.5 13,10" fill="${hullColor}"/>
+                                <polygon points="17,-1 24,10 17,7 10,10" fill="#ffffff" stroke="#0f172a" stroke-width="1.6"/>
+                                <polygon points="17,1 22,9 17,6.8 12,9" fill="${hullColor}"/>
                             </svg>
                         </div>
                     </div>
@@ -928,9 +925,9 @@
                     icon: L.divIcon({
                         html: vesselMarkerHtml,
                         className: 'gmap-vessel-marker',
-                        iconSize: [160, 86],
-                        iconAnchor: [80, 52],
-                        popupAnchor: [0, -52]
+                        iconSize: [140, 80],
+                        iconAnchor: [70, 48],
+                        popupAnchor: [0, -48]
                     }),
                     zIndexOffset: isDelayed ? 950 : (isDelivered ? 850 : (isStaged ? 800 : 900))
                 }).addTo(fleetMap);
@@ -1001,9 +998,18 @@
         updateRoutePolylinesVisibility();
 
         // Fit map bounds
-        if (!globalBounds.isEmpty()) {
+        if (globalBounds && globalBounds.isValid()) {
             fleetMap.fitBounds(globalBounds, { padding: [50, 50], maxZoom: 5 });
         }
+
+        setTimeout(() => {
+            if (fleetMap) {
+                fleetMap.invalidateSize();
+                if (globalBounds && globalBounds.isValid()) {
+                    fleetMap.fitBounds(globalBounds, { padding: [40, 40], maxZoom: 5 });
+                }
+            }
+        }, 250);
 
         // Search bar handler
         const searchInput = document.getElementById('map-search-bar');
