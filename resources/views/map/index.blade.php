@@ -104,15 +104,15 @@
             </button>
         </div>
 
-        <!-- Route Mode Toggle: Single Active Focus vs All Lines -->
+        <!-- Route Mode Toggle: All Lines vs Single Focus -->
         <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
-            <button type="button" onclick="toggleRouteMode('FOCUS')" id="btn-mode-focus"
-                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition bg-white text-slate-900 shadow-xs cursor-pointer">
-                🎯 Fokus Rute Terpilih (Bersih)
-            </button>
             <button type="button" onclick="toggleRouteMode('ALL')" id="btn-mode-all"
-                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition text-slate-600 hover:text-slate-900 cursor-pointer">
+                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition bg-white text-slate-900 shadow-xs cursor-pointer">
                 🌐 Tampilkan Semua Jalur
+            </button>
+            <button type="button" onclick="toggleRouteMode('FOCUS')" id="btn-mode-focus"
+                    class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition text-slate-600 hover:text-slate-900 cursor-pointer">
+                🎯 Fokus Rute Terpilih
             </button>
         </div>
     </div>
@@ -340,7 +340,7 @@
     const shipmentDestMarkers = {};
     let globalBounds;
     let currentFocusShipmentId = null;
-    let routeDisplayMode = 'FOCUS'; // 'FOCUS' (clean) or 'ALL' (all lines)
+    let routeDisplayMode = 'ALL'; // 'ALL' (all lines visible by default) or 'FOCUS' (only focused ship)
 
     /**
      * Helper to get compass direction from bearing degree
@@ -520,12 +520,12 @@
             const isThisFocused = (currentFocusShipmentId === s.id);
 
             if (currentFocusShipmentId !== null) {
-                // In FOCUS mode: prominently highlight selected route, hide all others
+                // When a specific vessel is focused/selected
                 if (isThisFocused) {
                     if (travPoly) {
                         travPoly.setStyle({
-                            opacity: 0.95,
-                            weight: 5,
+                            opacity: 1.0,
+                            weight: 6,
                             color: s.status_color
                         });
                         travPoly.bringToFront();
@@ -533,8 +533,8 @@
                     }
                     if (remPoly) {
                         remPoly.setStyle({
-                            opacity: 0.85,
-                            weight: 4,
+                            opacity: 0.9,
+                            weight: 4.5,
                             color: s.status_color,
                             dashArray: s.status_type === 'DELIVERED' ? null : '8, 8'
                         });
@@ -542,39 +542,49 @@
                         if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
                     }
                 } else {
-                    if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
-                    if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
-                }
-            } else {
-                // In overview mode (no single focus)
-                if (routeDisplayMode === 'ALL') {
-                    // Show lines for active voyages and delivered (skip staged to prevent clutter)
-                    if (s.status_type !== 'STAGED') {
+                    if (routeDisplayMode === 'FOCUS') {
+                        // In FOCUS mode: hide non-selected lines
+                        if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
+                        if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
+                    } else {
+                        // In ALL mode: keep other vessels visible as subtle background routes
                         if (travPoly) {
                             travPoly.setStyle({
-                                opacity: 0.7,
-                                weight: 3.5,
+                                opacity: 0.35,
+                                weight: 2.5,
                                 color: s.status_color
                             });
                             if (!fleetMap.hasLayer(travPoly)) travPoly.addTo(fleetMap);
                         }
                         if (remPoly) {
                             remPoly.setStyle({
-                                opacity: 0.5,
-                                weight: 2.5,
+                                opacity: 0.25,
+                                weight: 2,
                                 color: s.status_color,
-                                dashArray: s.status_type === 'DELIVERED' ? null : '6, 7'
+                                dashArray: '5, 7'
                             });
                             if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
                         }
-                    } else {
-                        if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
-                        if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
                     }
-                } else {
-                    // In FOCUS mode (Clean Overview): No lines cluttering map until a ship is clicked
-                    if (travPoly && fleetMap.hasLayer(travPoly)) fleetMap.removeLayer(travPoly);
-                    if (remPoly && fleetMap.hasLayer(remPoly)) fleetMap.removeLayer(remPoly);
+                }
+            } else {
+                // Overview mode (no single focus): ALWAYS SHOW ALL REAL MARITIME ROUTES
+                if (travPoly) {
+                    travPoly.setStyle({
+                        opacity: 0.8,
+                        weight: 3.5,
+                        color: s.status_color
+                    });
+                    if (!fleetMap.hasLayer(travPoly)) travPoly.addTo(fleetMap);
+                }
+                if (remPoly) {
+                    remPoly.setStyle({
+                        opacity: 0.6,
+                        weight: 2.8,
+                        color: s.status_color,
+                        dashArray: s.status_type === 'DELIVERED' ? null : '6, 8'
+                    });
+                    if (!fleetMap.hasLayer(remPoly)) remPoly.addTo(fleetMap);
                 }
             }
         });
@@ -682,8 +692,8 @@
                 const travPoly = L.polyline(s.traveled_path, {
                     color: s.status_color,
                     weight: 3.5,
-                    opacity: 0.65
-                });
+                    opacity: 0.8
+                }).addTo(fleetMap);
 
                 travPoly.on('click', () => {
                     selectShipmentRoute(s.id);
@@ -696,10 +706,10 @@
             if (s.remaining_path && s.remaining_path.length >= 2) {
                 const remPoly = L.polyline(s.remaining_path, {
                     color: s.status_color,
-                    weight: 2.5,
-                    opacity: 0.45,
-                    dashArray: s.status_type === 'DELIVERED' ? null : '6, 7'
-                });
+                    weight: 2.8,
+                    opacity: 0.6,
+                    dashArray: s.status_type === 'DELIVERED' ? null : '6, 8'
+                }).addTo(fleetMap);
 
                 remPoly.on('click', () => {
                     selectShipmentRoute(s.id);
@@ -945,11 +955,15 @@
                         if (vesselMarkers[id]) vesselMarkers[id].addTo(fleetMap);
                         if (shipmentOriginMarkers[id]) shipmentOriginMarkers[id].addTo(fleetMap);
                         if (shipmentDestMarkers[id]) shipmentDestMarkers[id].addTo(fleetMap);
+                        if (shipmentTraveledPolylines[id]) shipmentTraveledPolylines[id].addTo(fleetMap);
+                        if (shipmentRemainingPolylines[id]) shipmentRemainingPolylines[id].addTo(fleetMap);
                     } else {
                         card.style.display = 'none';
                         if (vesselMarkers[id]) fleetMap.removeLayer(vesselMarkers[id]);
                         if (shipmentOriginMarkers[id]) fleetMap.removeLayer(shipmentOriginMarkers[id]);
                         if (shipmentDestMarkers[id]) fleetMap.removeLayer(shipmentDestMarkers[id]);
+                        if (shipmentTraveledPolylines[id]) fleetMap.removeLayer(shipmentTraveledPolylines[id]);
+                        if (shipmentRemainingPolylines[id]) fleetMap.removeLayer(shipmentRemainingPolylines[id]);
                     }
                 });
 
