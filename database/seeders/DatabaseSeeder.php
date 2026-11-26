@@ -963,6 +963,24 @@ class DatabaseSeeder extends Seeder
             ],
         ];
 
+        $vesselDirectory = [
+            'CTC-2026-0001' => 'MV Nusantara Jaya',
+            'CTC-2026-0002' => 'CMA CGM Java Express',
+            'CTC-2026-0003' => 'MSC Sumatra Star',
+            'CTC-2026-0004' => 'MV Santos Pioneer',
+            'CTC-2026-0005' => 'Maersk Abidjan Trader',
+            'CTC-2026-0006' => 'Hapag-Lloyd Accra',
+            'CTC-2026-0007' => 'ONE Malacca Voyager',
+            'CTC-2026-0008' => 'Evergreen Toraja',
+            'CTC-2026-0009' => 'COSCO Bali Mariner',
+            'CTC-2026-0010' => 'Pacific Malacca Feeder',
+            'CTC-2026-0011' => 'Yang Ming Cenderawasih',
+            'CTC-2026-0012' => 'MSC Gayo Explorer',
+            'CTC-2026-0013' => 'CMA CGM Atlantique',
+            'CTC-2026-0014' => 'Maersk Rio Grande',
+            'CTC-2026-0015' => 'KM Priok Sejahtera',
+        ];
+
         // Seed each shipment and its related records
         foreach ($shipmentsData as $s) {
             $expectedArrival = $now->copy()->addDays($s['arr_add_days']);
@@ -981,6 +999,7 @@ class DatabaseSeeder extends Seeder
                 'weight' => $s['weight'],
                 'volume' => $s['volume'],
                 'current_status' => $s['status'],
+                'vessel_carrier' => $vesselDirectory[$s['number']] ?? 'MV Nusantara Jaya',
                 'expected_departure' => $now->copy()->subDays($s['dep_sub_days']),
                 'expected_arrival' => $expectedArrival,
                 'estimated_arrival' => $estimatedArrival,

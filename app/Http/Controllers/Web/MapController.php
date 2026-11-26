@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Carrier;
 use App\Models\Shipment;
+use App\Services\MaritimeSeaRouteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -74,14 +75,98 @@ class MapController extends Controller
 
         $shipments = $query->latest()->get();
 
-        // Map shipments to enriched geographic objects with exact live positions
-        $mapShipments = $shipments->map(function (Shipment $s) use ($user) {
+        // Distinct, realistic vessel names mapped by shipment ID
+        $vesselDirectory = [
+            1 => 'MV Nusantara Jaya',
+            2 => 'CMA CGM Java Express',
+            3 => 'MSC Sumatra Star',
+            4 => 'MV Santos Pioneer',
+            5 => 'Maersk Abidjan Trader',
+            6 => 'Hapag-Lloyd Accra',
+            7 => 'ONE Malacca Voyager',
+            8 => 'Evergreen Toraja',
+            9 => 'COSCO Bali Mariner',
+            10 => 'Pacific Malacca Feeder',
+            11 => 'Yang Ming Cenderawasih',
+            12 => 'MSC Gayo Explorer',
+            13 => 'CMA CGM Atlantique',
+            14 => 'Maersk Rio Grande',
+            15 => 'KM Priok Sejahtera',
+        ];
+
+        // Map shipments to enriched geographic objects with realistic maritime routes
+        $mapShipments = $shipments->map(function (Shipment $s) use ($user, $vesselDirectory) {
             $currentPos = $s->getCurrentPosition();
             $comm = $s->commodity_type;
 
             $itemsSummary = $s->items->count() > 0
                 ? $s->items->map(fn($item) => ($item->item_name ?? $item->commodity_category) . ' (' . number_format($item->net_weight, 0) . ' kg)')->join(', ')
                 : ($s->cargo_type . ' (' . number_format($s->weight, 0) . ' kg)');
+
+            $originLat = (float) ($s->origin?->latitude ?? 0);
+            $originLng = (float) ($s->origin?->longitude ?? 0);
+            $destLat = (float) ($s->destination?->latitude ?? 0);
+            $destLng = (float) ($s->destination?->longitude ?? 0);
+
+            // True maritime sea corridor (no cutting across land)
+            $seaRouteCoords = MaritimeSeaRouteService::getMaritimeRoute(
+                $originLat,
+                $originLng,
+                $destLat,
+                $destLng,
+                $s->origin?->code ?? '',
+                $s->destination?->code ?? ''
+            );
+
+            // Three Customer-Requested Visual Types & Color Coding:
+            // 1. Sudah Sampai (Delivered) -> Hijau Emerald (#10b981)
+            // 2. Terhambat (Delayed / Exception / Problem) -> Merah Peringatan (#e11d48)
+            // 3. Sedang Berlayar (In Transit Normal) -> Biru Samudra (#0284c7)
+            $isDelivered = ($s->current_status === 'DELIVERED');
+            $isDelayed = ($s->is_delayed || $s->delay_hours > 0 || ($currentPos['is_signal_offline'] ?? false));
+
+            if ($isDelivered) {
+                $statusType = 'DELIVERED';
+                $statusLabel = 'SUDAH SAMPAI DI TUJUAN';
+                $statusColor = '#10b981'; // Emerald Green
+                $statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                $shipColor = 'emerald';
+                $progressPercent = 100;
+                $navStatus = 'SUDAH SAMPAI (SELESAI)';
+            } elseif ($isDelayed) {
+                $statusType = 'DELAYED';
+                $statusLabel = 'TERHAMBAT / PERINGATAN LOGISTIK (DELAY)';
+                $statusColor = '#e11d48'; // Vibrant Warning Red
+                $statusBadgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
+                $shipColor = 'rose';
+                $progressPercent = $currentPos['progress_percent'] ?? 45;
+                $navStatus = 'TERHAMBAT (DELAY ' . round($s->delay_hours, 1) . ' Jam)';
+            } else {
+                $statusType = 'IN_TRANSIT';
+                $statusLabel = 'SEDANG BERLAYAR (IN TRANSIT)';
+                $statusColor = '#0284c7'; // Ocean Blue
+                $statusBadgeClass = 'bg-blue-100 text-blue-800 border-blue-300';
+                $shipColor = 'blue';
+                $progressPercent = $currentPos['progress_percent'] ?? 55;
+                $navStatus = 'SEDANG BERLAYAR LANCAR';
+            }
+
+            // Interpolate ship coordinates along true sea channel (or respect LKP coordinates if offline)
+            if (!empty($currentPos['is_signal_offline']) && !empty($currentPos['latitude'])) {
+                $shipLat = (float) $currentPos['latitude'];
+                $shipLng = (float) $currentPos['longitude'];
+                $shipBearing = 270;
+            } else {
+                [$shipLat, $shipLng, $shipBearing] = MaritimeSeaRouteService::interpolatePositionAlongRoute(
+                    $seaRouteCoords,
+                    $progressPercent
+                );
+            }
+
+            // Assign distinct vessel name
+            $vesselName = ($s->vessel_carrier && $s->vessel_carrier !== 'MV Maersk Semarang')
+                ? $s->vessel_carrier
+                : ($vesselDirectory[$s->id] ?? ($s->carrier?->name . ' ' . $s->origin?->city . ' Liner'));
 
             return [
                 'id' => $s->id,
@@ -94,9 +179,15 @@ class MapController extends Controller
                 'volume_formatted' => number_format($s->volume, 1) . ' m³',
                 'items_summary' => $itemsSummary,
                 'status' => $s->current_status,
-                'navigation_status' => $currentPos['navigation_status'] ?? ($s->current_status === 'DELIVERED' ? 'SUDAH SAMPAI' : ($s->current_status === 'IN_TRANSIT' ? 'SEDANG TRANSIT' : 'PROSES DI ASAL')),
+                'status_type' => $statusType,
+                'status_label' => $statusLabel,
+                'status_color' => $statusColor,
+                'status_badge_class' => $statusBadgeClass,
+                'ship_color' => $shipColor,
+                'progress_percent' => $progressPercent,
+                'navigation_status' => $navStatus,
                 'is_west_sector' => (bool) ($currentPos['is_west_sector'] ?? false),
-                'sector_label' => $currentPos['sector_label'] ?? 'Koridor Maritim',
+                'sector_label' => $currentPos['sector_label'] ?? 'Koridor Maritim Internasional',
                 'signal_status' => $currentPos['signal_status'] ?? 'ACTIVE',
                 'is_signal_offline' => (bool) ($currentPos['is_signal_offline'] ?? false),
                 'signal_label' => $currentPos['signal_label'] ?? '🟢 Sinyal AIS Aktif',
@@ -107,13 +198,13 @@ class MapController extends Controller
                     'company' => $s->customer?->company_name ?? 'International Buyer',
                 ],
                 'is_my_cargo' => $user ? ($s->customer_id === $user->id || $user->isAdmin() || $user->isOperator()) : true,
-                'is_delayed' => (bool) $s->is_delayed,
+                'is_delayed' => (bool) $isDelayed,
                 'delay_hours' => (float) $s->delay_hours,
                 'carrier' => $s->carrier?->name ?? 'Maritime Express',
                 'carrier_code' => $s->carrier?->code ?? 'OCN',
-                'vessel_name' => $s->vessel_name ?? $s->vessel_carrier ?? 'MV Cargo Liner',
-                'voyage_number' => $s->voyage_number ?? 'VOY-2026',
-                'container_number' => $s->container_number ?? 'CTRU-882910',
+                'vessel_name' => $vesselName,
+                'voyage_number' => $s->voyage_number ?? ('VOY-' . (2026 + $s->id)),
+                'container_number' => $s->container_number ?? ('CTRU-' . (882900 + $s->id)),
                 'expected_departure' => $s->expected_departure?->format('d M Y H:i'),
                 'expected_arrival' => $s->expected_arrival?->format('d M Y'),
                 'estimated_arrival' => $s->estimated_arrival?->format('d M Y'),
@@ -121,27 +212,26 @@ class MapController extends Controller
                     'name' => $s->origin?->name ?? 'Origin Port',
                     'city' => $s->origin?->city ?? 'Origin',
                     'country' => $s->origin?->country ?? 'Origin',
-                    'lat' => (float) ($s->origin?->latitude ?? 0),
-                    'lng' => (float) ($s->origin?->longitude ?? 0),
+                    'lat' => $originLat,
+                    'lng' => $originLng,
                 ],
                 'destination' => [
                     'name' => $s->destination?->name ?? 'Destination Port',
                     'city' => $s->destination?->city ?? 'Destination',
                     'country' => $s->destination?->country ?? 'Destination',
-                    'lat' => (float) ($s->destination?->latitude ?? 0),
-                    'lng' => (float) ($s->destination?->longitude ?? 0),
+                    'lat' => $destLat,
+                    'lng' => $destLng,
                 ],
-                'current_position' => $currentPos,
-                'waypoints' => $s->trackingEvents
-                    ->whereNotNull('latitude')
-                    ->whereNotNull('longitude')
-                    ->map(fn($e) => [
-                        'lat' => (float) $e->latitude,
-                        'lng' => (float) $e->longitude,
-                        'location' => $e->location_name,
-                        'time' => $e->event_time?->format('Y-m-d H:i'),
-                        'description' => $e->description,
-                    ])->values()->all(),
+                'current_position' => [
+                    'latitude' => $shipLat,
+                    'longitude' => $shipLng,
+                    'bearing' => $shipBearing,
+                    'location_name' => $currentPos['location_name'] ?? 'Jalur Laut Internasional',
+                    'last_updated' => $currentPos['last_updated'] ?? now()->format('Y-m-d H:i'),
+                    'progress_percent' => $progressPercent,
+                    'is_west_sector' => (bool) ($currentPos['is_west_sector'] ?? false),
+                ],
+                'sea_route' => $seaRouteCoords,
                 'detail_url' => route('shipments.show', $s->id),
             ];
         });
@@ -155,23 +245,21 @@ class MapController extends Controller
             if ($request->signal === 'OFFLINE') {
                 $mapShipments = $mapShipments->filter(fn($m) => $m['is_signal_offline'])->values();
             } elseif ($request->signal === 'ACTIVE') {
-                $mapShipments = $mapShipments->filter(fn($m) => !$m['is_signal_offline'] && $m['status'] !== 'DELIVERED')->values();
+                $mapShipments = $mapShipments->filter(fn($m) => !$m['is_signal_offline'] && $m['status_type'] !== 'DELIVERED')->values();
             }
         }
 
         $carriers = Carrier::where('is_active', true)->get();
 
-        $allCollection = $shipments->map(fn($s) => $s->getCurrentPosition());
         $stats = [
-            'total' => $shipments->count(),
-            'in_transit' => $shipments->where('current_status', 'IN_TRANSIT')->count(),
-            'delivered' => $shipments->where('current_status', 'DELIVERED')->count(),
-            'west_sector' => $allCollection->where('is_west_sector', true)->count(),
-            'signal_offline' => $allCollection->where('is_signal_offline', true)->count(),
-            'signal_active' => $allCollection->where('signal_status', 'ACTIVE')->count(),
-            'coffee' => $shipments->filter(fn($s) => $s->commodity_type === 'COFFEE')->count(),
-            'cocoa' => $shipments->filter(fn($s) => $s->commodity_type === 'COCOA')->count(),
-            'delayed' => $shipments->where('is_delayed', true)->count(),
+            'total' => $mapShipments->count(),
+            'delivered' => $mapShipments->where('status_type', 'DELIVERED')->count(),
+            'in_transit' => $mapShipments->where('status_type', 'IN_TRANSIT')->count(),
+            'delayed' => $mapShipments->where('status_type', 'DELAYED')->count(),
+            'west_sector' => $mapShipments->where('is_west_sector', true)->count(),
+            'signal_offline' => $mapShipments->where('is_signal_offline', true)->count(),
+            'coffee' => $mapShipments->filter(fn($s) => $s['commodity'] === 'COFFEE')->count(),
+            'cocoa' => $mapShipments->filter(fn($s) => $s['commodity'] === 'COCOA')->count(),
         ];
 
         return view('map.index', compact('mapShipments', 'carriers', 'stats'));
