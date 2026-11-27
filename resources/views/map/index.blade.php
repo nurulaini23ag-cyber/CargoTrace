@@ -19,7 +19,6 @@
             </div>
             <h1 class="text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2">
                 <span>Global Cargo Map & Customer Fleet Tracking</span>
-                <span class="sr-only">Peta Kargo Global</span>
             </h1>
             <p class="text-xs md:text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
                 Real-time tracking of coffee and cocoa cargo vessels across international maritime corridors with status color coding: <strong class="text-emerald-400">🟢 Delivered</strong>, <strong class="text-sky-400">🔵 In Transit</strong>, and <strong class="text-rose-400">🔴 Delayed / Alert</strong>.
@@ -29,15 +28,15 @@
         <!-- 4-Tier Status Metric Badges -->
         <div class="flex flex-wrap items-center gap-2 shrink-0">
             <div class="px-3.5 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-center min-w-[85px]">
-                <div class="text-[10px] uppercase font-bold text-slate-400">All Vessels <span class="sr-only">Semua Kapal</span></div>
+                <div class="text-[10px] uppercase font-bold text-slate-400">All Vessels</div>
                 <div class="text-lg font-black text-white" id="stat-total">{{ $stats['total'] }}</div>
             </div>
             <div class="px-3.5 py-2 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-center min-w-[85px]">
-                <div class="text-[10px] uppercase font-bold text-emerald-300">🟢 Delivered <span class="sr-only">Sudah Sampai</span></div>
+                <div class="text-[10px] uppercase font-bold text-emerald-300">🟢 Delivered</div>
                 <div class="text-lg font-black text-emerald-400" id="stat-delivered">{{ $stats['delivered'] }}</div>
             </div>
             <div class="px-3.5 py-2 bg-sky-950/60 border border-sky-500/40 rounded-xl text-center min-w-[85px]">
-                <div class="text-[10px] uppercase font-bold text-sky-300">🔵 In Transit <span class="sr-only">Lagi Transit</span></div>
+                <div class="text-[10px] uppercase font-bold text-sky-300">🔵 In Transit</div>
                 <div class="text-lg font-black text-sky-400" id="stat-sailing">{{ $stats['in_transit'] }}</div>
             </div>
             <div class="px-3.5 py-2 bg-rose-950/60 border border-rose-500/40 rounded-xl text-center min-w-[85px]">
@@ -67,19 +66,19 @@
         <div class="flex flex-wrap items-center gap-1.5 text-xs">
             <button type="button" onclick="applyQuickFilter('ALL')" id="chip-ALL"
                     class="filter-chip px-3 py-1.5 rounded-full font-black border transition bg-slate-900 text-white border-slate-900 shadow-xs cursor-pointer">
-                🌐 All Vessels ({{ $stats['total'] }}) <span class="sr-only">Semua Kapal</span>
+                🌐 All Vessels ({{ $stats['total'] }})
             </button>
             <button type="button" onclick="applyQuickFilter('DELIVERED')" id="chip-DELIVERED"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 cursor-pointer">
-                🟢 Delivered ({{ $stats['delivered'] }}) <span class="sr-only">Sudah Sampai</span>
+                🟢 Delivered ({{ $stats['delivered'] }})
             </button>
             <button type="button" onclick="applyQuickFilter('IN_TRANSIT')" id="chip-IN_TRANSIT"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-sky-50 text-sky-800 border-sky-300 hover:bg-sky-100 cursor-pointer">
-                🔵 In Transit ({{ $stats['in_transit'] }}) <span class="sr-only">Lagi Transit Sedang Berlayar</span>
+                🔵 In Transit ({{ $stats['in_transit'] }})
             </button>
             <button type="button" onclick="applyQuickFilter('DELAYED')" id="chip-DELAYED"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100 cursor-pointer">
-                🔴 Delayed ({{ $stats['delayed'] }}) <span class="sr-only">Terhambat</span>
+                🔴 Delayed ({{ $stats['delayed'] }})
             </button>
             @if(($stats['staged'] ?? 0) > 0)
             <button type="button" onclick="applyQuickFilter('STAGED')" id="chip-STAGED"
@@ -89,11 +88,11 @@
             @endif
             <button type="button" onclick="applyQuickFilter('WEST')" id="chip-WEST"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100 cursor-pointer">
-                🇪🇺 West Sector (Europe) <span class="sr-only">Di Barat (Eropa)</span>
+                🇪🇺 West Sector (Europe)
             </button>
             <button type="button" onclick="applyQuickFilter('OFFLINE')" id="chip-OFFLINE"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 cursor-pointer">
-                ⚠️ Offline Signal (LKP) <span class="sr-only">Sinyal Mati (LKP)</span>
+                ⚠️ Offline Signal (LKP)
             </button>
             <button type="button" onclick="applyQuickFilter('COFFEE')" id="chip-COFFEE"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 cursor-pointer">
@@ -133,7 +132,7 @@
                 </button>
                 <button type="button" onclick="switchBaseMap('osm')" id="btn-layer-osm"
                         class="layer-toggle-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
-                    🗺️ Standard Map <span class="sr-only">Google / OSM Standard</span>
+                    🗺️ Standard Map
                 </button>
                 <button type="button" onclick="switchBaseMap('satellite')" id="btn-layer-satellite"
                         class="layer-toggle-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">

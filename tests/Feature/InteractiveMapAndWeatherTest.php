@@ -108,7 +108,7 @@ class InteractiveMapAndWeatherTest extends TestCase
 
         $response = $this->get('/map');
         $response->assertStatus(200);
-        $response->assertSee('Peta Kargo Global');
+        $response->assertSee('Global Cargo Map');
         $response->assertSee('CTC-2026-0001');
     }
 
@@ -296,12 +296,12 @@ class InteractiveMapAndWeatherTest extends TestCase
         $response = $this->get('/map');
         $response->assertStatus(200);
         $response->assertSee('LEAFLET + OPENSTREETMAP');
-        $response->assertSee('Google / OSM Standard');
-        $response->assertSee('Semua Kapal');
-        $response->assertSee('Lagi Transit');
-        $response->assertSee('Di Barat (Eropa)');
-        $response->assertSee('Sudah Sampai');
-        $response->assertSee('Sinyal Mati (LKP)');
+        $response->assertSee('Standard Map');
+        $response->assertSee('All Vessels');
+        $response->assertSee('In Transit');
+        $response->assertSee('West Sector (Europe)');
+        $response->assertSee('Delivered');
+        $response->assertSee('Offline Signal (LKP)');
     }
 
     public function test_shipment_offline_signal_tracks_real_time_last_known_position(): void
@@ -356,11 +356,11 @@ class InteractiveMapAndWeatherTest extends TestCase
         // Filter by DELIVERED
         $delivResponse = $this->get('/map?status=DELIVERED');
         $delivResponse->assertStatus(200);
-        $delivResponse->assertSee('Peta Kargo Global');
+        $delivResponse->assertSee('Global Cargo Map');
 
         // Filter by Sector BARAT
         $westResponse = $this->get('/map?sector=BARAT');
         $westResponse->assertStatus(200);
-        $westResponse->assertSee('Peta Kargo Global');
+        $westResponse->assertSee('Global Cargo Map');
     }
 }
