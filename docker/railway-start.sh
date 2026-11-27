@@ -22,6 +22,28 @@ php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 
+# Wait for MySQL/Postgres if using external DB service on Railway
+if [ "${DB_CONNECTION:-sqlite}" != "sqlite" ]; then
+    echo "Waiting for database (${DB_CONNECTION}) to be ready..."
+    ATTEMPTS=0
+    until php -r "
+        try {
+            \$dsn = '${DB_CONNECTION}:host=' . getenv('DB_HOST') . ';port=' . (getenv('DB_PORT') ?: '3306') . ';dbname=' . getenv('DB_DATABASE');
+            new PDO(\$dsn, getenv('DB_USERNAME'), getenv('DB_PASSWORD'), [PDO::ATTR_TIMEOUT => 3]);
+            exit(0);
+        } catch (Throwable \$e) {
+            exit(1);
+        }
+    " 2>/dev/null; do
+        ATTEMPTS=$((ATTEMPTS + 1))
+        if [ "$ATTEMPTS" -ge 30 ]; then
+            echo "Database connection timed out after 30 attempts, continuing anyway..."
+            break
+        fi
+        sleep 2
+    done
+fi
+
 # Run database migrations safely
 php artisan migrate --force
 
