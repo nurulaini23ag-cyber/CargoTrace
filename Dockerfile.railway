@@ -1,0 +1,31 @@
+FROM php:8.3-cli-alpine
+
+WORKDIR /var/www/html
+
+RUN apk add --no-cache \
+    git \
+    curl \
+    libpng-dev \
+    oniguruma-dev \
+    libxml2-dev \
+    sqlite-dev \
+    postgresql-dev \
+    zip \
+    unzip \
+    linux-headers
+
+RUN docker-php-ext-install pdo pdo_mysql pdo_sqlite pdo_pgsql mbstring exif pcntl bcmath gd
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+COPY . /var/www/html
+
+RUN composer install --no-dev --optimize-autoloader --no-interaction \
+    && sed -i 's/\r$//' /var/www/html/docker/railway-start.sh \
+    && chmod +x /var/www/html/docker/railway-start.sh \
+    && mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache database \
+    && chmod -R 775 storage bootstrap/cache database
+
+EXPOSE 8080
+
+CMD ["sh", "/var/www/html/docker/railway-start.sh"]
