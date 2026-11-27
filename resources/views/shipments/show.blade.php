@@ -194,140 +194,76 @@
                 @endif
             </div>
 
-            <!-- Interactive Live Cargo Tracking Map & Current Position (Slide 09) -->
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <!-- Interactive Nautical Route & Vessel Tracking Map -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-white">
                     <div>
                         <div class="flex items-center gap-2">
-                            <h2 class="text-base font-bold text-slate-900">Geographic Maritime Tracking Map</h2>
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span> Live Position Active
+                            <h2 class="text-sm md:text-base font-black text-slate-900 tracking-tight">Interactive Nautical Route &amp; Vessel Tracking Map</h2>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-600 border border-sky-200">
+                                HD English Labels
                             </span>
                         </div>
-                        <p class="text-xs text-slate-500">Real-time sea freight route, waypoints, and current cargo position</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Leaflet.js &middot; Navigable Sea Lanes &middot; Live Vessel Position &amp; Bearing</p>
                     </div>
-                    <span class="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded shadow-xs">
-                        Leaflet + OSM Marine
-                    </span>
-                </div>
-
-                <!-- Prominent Current Position HUD Card ("Di Mana Barang Itu Sudah Sampai") -->
-                <div class="p-4 bg-gradient-to-r from-[#38251D] via-[#4E342E] to-[#38251D] text-white">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div>
-                            <div class="text-[11px] uppercase tracking-wider text-[#C49A55] font-bold flex items-center gap-1.5">
-                                <span>📍</span> Posisi Kargo Saat Ini &bull; Current Cargo Position
-                            </div>
-                            <div class="text-base font-extrabold text-white mt-0.5 flex items-center gap-2">
-                                <span>{{ $currentPos['location_name'] }}</span>
-                                @if($currentPos['is_arrived'])
-                                    <span class="px-2 py-0.5 bg-emerald-500 text-white text-[10px] rounded font-bold">ARRIVED</span>
-                                @else
-                                    <span class="px-2 py-0.5 bg-[#C49A55] text-slate-900 text-[10px] rounded font-bold">EN ROUTE</span>
-                                @endif
-                            </div>
-                            <div class="text-xs text-[#E8D7B9] mt-1 flex flex-wrap items-center gap-3">
-                                <span><strong>Koordinat:</strong> {{ number_format($currentPos['latitude'], 4) }}°, {{ number_format($currentPos['longitude'], 4) }}°</span>
-                                <span>&bull;</span>
-                                <span><strong>Pembaruan Terakhir:</strong> {{ $currentPos['last_updated'] }}</span>
-                                <span>&bull;</span>
-                                <span><strong>Vessel:</strong> {{ $shipment->vessel_name ?? $shipment->vessel_carrier ?? 'MSC Amsterdam' }}</span>
-                            </div>
-                            <div class="mt-2 flex flex-wrap items-center gap-2">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $currentPos['is_signal_offline'] ? 'bg-amber-400 text-slate-900' : 'bg-emerald-500/30 text-emerald-300 border border-emerald-400/30' }}">
-                                    {{ $currentPos['signal_label'] }}
-                                </span>
-                                @if($currentPos['is_signal_offline'])
-                                    <span class="text-[10px] text-amber-200">
-                                        (Menampilkan Last Known Position secara real-time)
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Progress Bar & Nautical Weather Pill -->
-                        <div class="bg-black/20 p-2.5 rounded-lg border border-white/10 min-w-[210px]">
-                            <div class="flex justify-between text-[11px] font-bold mb-1">
-                                <span class="text-[#E8D7B9]">Voyage Progress</span>
-                                <span class="text-white">{{ $currentPos['progress_percent'] }}%</span>
-                            </div>
-                            <div class="w-full bg-white/20 h-2 rounded-full overflow-hidden">
-                                <div class="bg-gradient-to-r from-[#C49A55] to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: {{ $currentPos['progress_percent'] }}%"></div>
-                            </div>
-                            <div class="mt-2 text-[10px] text-white/80 flex items-center justify-between">
-                                <span>{{ $shipment->origin->city }}</span>
-                                <span class="text-[#C49A55] font-mono">⚓</span>
-                                <span>{{ $shipment->destination->city }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Shopee-Style Live Vessel Sailing Controls Bar -->
-                <div class="px-4 py-2.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2.5 text-xs border-b border-slate-800">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-[10px] font-black uppercase tracking-wider text-[#C49A55] flex items-center gap-1">
-                            <span>⚡</span> LIVE SAILING SIMULATOR
-                        </span>
-                        <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-                            <button id="btn-play-pause" type="button" class="px-2.5 py-1 rounded bg-[#C49A55] text-slate-900 font-extrabold text-[11px] hover:bg-[#b38944] transition flex items-center gap-1 shadow-xs">
-                                <span id="play-icon">⏸️</span> <span id="play-text">Jeda</span>
-                            </button>
-                            <button id="btn-restart" type="button" class="px-2 py-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 text-[11px] font-bold transition flex items-center gap-1" title="Ulangi pelayaran dari pelabuhan asal">
-                                <span>🔄</span> Ulangi
-                            </button>
-                            <button id="btn-jump-now" type="button" class="px-2 py-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 text-[11px] font-bold transition flex items-center gap-1" title="Lompat ke posisi kargo saat ini">
-                                <span>🎯</span> Posisi Terkini
-                            </button>
-                        </div>
-
-                        <!-- Speed selector -->
-                        <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 border border-slate-700 text-[10px]">
-                            <span class="text-slate-400 px-1 font-bold">Speed:</span>
-                            <button type="button" onclick="setSailingSpeed(1)" class="speed-btn px-1.5 py-0.5 rounded font-bold transition bg-[#C49A55] text-slate-900" id="speed-1">1x</button>
-                            <button type="button" onclick="setSailingSpeed(2)" class="speed-btn px-1.5 py-0.5 rounded font-bold transition text-slate-300 hover:text-white" id="speed-2">2x</button>
-                            <button type="button" onclick="setSailingSpeed(4)" class="speed-btn px-1.5 py-0.5 rounded font-bold transition text-slate-300 hover:text-white" id="speed-4">4x</button>
-                        </div>
-                    </div>
-
-                    <!-- World Map Theme Selector -->
                     <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase hidden sm:inline">Peta Dunia:</span>
-                        <select id="world-map-style" onchange="changeMapTheme(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1 text-[11px] font-semibold focus:outline-none focus:ring-1 focus:ring-[#C49A55] cursor-pointer">
-                            <option value="voyager" selected>🗺️ Peta Dunia Voyager (Default)</option>
-                            <option value="dark">🌙 Dark Maritime Chart</option>
-                            <option value="osm">🧭 OpenStreetMap Classic</option>
-                        </select>
+                        <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200" id="shipment-waypoints-count">
+                            {{ count($seaRoute ?? []) ?: 6 }} Waypoints
+                        </span>
+                        <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                            Single World
+                        </span>
                     </div>
                 </div>
 
-                <!-- Leaflet Map Canvas with Telemetry Overlay -->
+                <!-- Leaflet Map Canvas with Floating Bottom AIS Telemetry Bar -->
                 <div class="relative w-full">
-                    <!-- Live Telemetry HUD Bar on Top of Map -->
-                    <div class="absolute top-3 left-14 z-20 bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-[#C49A55]/40 shadow-lg text-[11px] flex items-center gap-3 pointer-events-none">
-                        <div class="flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                            <span class="font-extrabold text-[#E8D7B9]">KAPAL BERLAYAR (LIVE):</span>
-                            <span class="font-mono text-white font-bold" id="telemetry-coords">Lat: {{ number_format($currentPos['latitude'], 4) }}°, Lon: {{ number_format($currentPos['longitude'], 4) }}°</span>
-                        </div>
-                        <span class="text-slate-500">|</span>
-                        <span class="text-[#C49A55] font-bold" id="telemetry-speed">Kecepatan: 19.4 Knots</span>
-                        <span class="text-slate-500 hidden md:inline">|</span>
-                        <span class="text-slate-300 hidden md:inline">Status: <strong id="telemetry-leg">High Seas Transit</strong></span>
-                    </div>
+                    <div id="shipment-map" class="h-[480px] w-full z-10 bg-[#aad3df]"></div>
 
-                    <div id="shipment-map" class="h-[520px] w-full z-10"></div>
+                    <!-- Floating Bottom AIS TELEMETRY HUD Bar -->
+                    <div class="absolute bottom-4 left-4 right-4 z-[1000] bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="text-[11px] font-black tracking-wider uppercase text-emerald-400">AIS TELEMETRY</span>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-4 md:gap-6 text-[11px]">
+                            <div>
+                                <div class="text-[9px] text-slate-400 font-semibold uppercase">Steaming Speed</div>
+                                <div class="font-black text-amber-400 font-mono" id="telemetry-speed">14.8 kts</div>
+                            </div>
+                            <div>
+                                <div class="text-[9px] text-slate-400 font-semibold uppercase">Course Bearing</div>
+                                <div class="font-black text-sky-400 font-mono" id="telemetry-bearing">112.3°</div>
+                            </div>
+                            <div>
+                                <div class="text-[9px] text-slate-400 font-semibold uppercase">Navigational Fairway</div>
+                                <div class="font-bold text-white" id="telemetry-leg">{{ $currentPos['is_arrived'] ? 'Berthed at Destination' : 'Underway Transit' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-[9px] text-slate-400 font-semibold uppercase">Voyage Progress</div>
+                                <div class="font-black text-emerald-400 font-mono" id="telemetry-progress">{{ number_format($currentPos['progress_percent'], 1) }}%</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 bg-slate-800/90 p-1 rounded-xl border border-slate-700 text-[10px]">
+                            <button type="button" onclick="setSailingSpeed(1)" id="speed-1" class="speed-btn px-2 py-1 rounded-lg font-bold transition bg-sky-600 text-white cursor-pointer">1x Real</button>
+                            <button type="button" onclick="setSailingSpeed(5)" id="speed-5" class="speed-btn px-2 py-1 rounded-lg font-bold transition text-slate-300 hover:text-white cursor-pointer">5x Cruise</button>
+                            <button type="button" onclick="setSailingSpeed(20)" id="speed-20" class="speed-btn px-2 py-1 rounded-lg font-bold transition text-slate-300 hover:text-white cursor-pointer">20x Sim</button>
+                            <button type="button" onclick="togglePlayPause()" id="btn-play-pause" class="speed-btn px-2 py-1 rounded-lg font-bold transition text-slate-300 hover:text-white cursor-pointer"><span id="play-text">Pause</span></button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="p-3 bg-slate-50 text-[11px] text-slate-600 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                    <div class="flex items-center gap-3">
+                <div class="p-3 bg-slate-50 text-[11px] text-slate-600 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 px-4">
+                    <div class="flex flex-wrap items-center gap-3">
                         <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Origin Port</span>
-                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> <strong>Current Position (Di mana barang sampai)</strong></span>
-                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span> Waypoint</span>
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> <strong>Live Vessel Position</strong></span>
+                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span> Sea Waypoint</span>
                         <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Destination Port</span>
                     </div>
-                    <div>
-                        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" class="underline text-slate-500">OpenStreetMap</a> contributors
+                    <div class="text-[10px] text-slate-400 font-mono">
+                        Tiles &copy; Esri &mdash; OpenStreetMap &amp; contributors, DeLorme, NAVTEQ, TomTom
                     </div>
                 </div>
             </div>
@@ -799,14 +735,36 @@
 
     function setSailingSpeed(multiplier) {
         sailingSpeed = multiplier;
+        isSailingPlaying = true;
         document.querySelectorAll('.speed-btn').forEach(b => {
-            b.classList.remove('bg-[#C49A55]', 'text-slate-900');
+            b.classList.remove('bg-sky-600', 'text-white');
             b.classList.add('text-slate-300');
         });
         const activeBtn = document.getElementById('speed-' + multiplier);
         if (activeBtn) {
-            activeBtn.classList.add('bg-[#C49A55]', 'text-slate-900');
+            activeBtn.classList.add('bg-sky-600', 'text-white');
             activeBtn.classList.remove('text-slate-300');
+        }
+        const playText = document.getElementById('play-text');
+        if (playText) playText.innerText = 'Pause';
+    }
+
+    function togglePlayPause() {
+        isSailingPlaying = !isSailingPlaying;
+        const pauseBtn = document.getElementById('btn-play-pause');
+        const playText = document.getElementById('play-text');
+        if (!isSailingPlaying) {
+            document.querySelectorAll('.speed-btn').forEach(b => {
+                b.classList.remove('bg-sky-600', 'text-white');
+                b.classList.add('text-slate-300');
+            });
+            if (pauseBtn) {
+                pauseBtn.classList.add('bg-sky-600', 'text-white');
+                pauseBtn.classList.remove('text-slate-300');
+            }
+            if (playText) playText.innerText = 'Resume';
+        } else {
+            setSailingSpeed(sailingSpeed || 1);
         }
     }
 
@@ -866,40 +824,62 @@
             }
         }
 
-        // Initialize World Map Leaflet Instance
+        // Initialize Single World Map Leaflet Instance
+        const worldBounds = L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180));
         map = L.map('shipment-map', {
             center: [(originLat + destLat) / 2, (originLon + destLon) / 2],
-            zoom: 3,
+            zoom: 2,
             minZoom: 2,
             maxZoom: 18,
-            worldCopyJump: true
+            maxBounds: worldBounds,
+            maxBoundsViscosity: 1.0,
+            worldCopyJump: false
         });
 
-        // World Map Basemap Tile Providers
+        // World Map Basemap Tile Providers (Esri World Street Map HD English Labels Default)
         tileProviders = {
-            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }),
-            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 18,
-                attribution: '&copy; Esri &mdash; World Imagery'
+                noWrap: true,
+                bounds: worldBounds,
+                attribution: 'Tiles &copy; Esri &mdash; OpenStreetMap &amp; contributors, DeLorme, NAVTEQ, TomTom'
             }),
             voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19,
+                noWrap: true,
+                bounds: worldBounds,
                 subdomains: 'abcd',
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
             }),
-            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 18,
+                noWrap: true,
+                bounds: worldBounds,
+                attribution: 'Tiles &copy; Esri &mdash; World Imagery'
+            }),
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                subdomains: 'abcd',
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                noWrap: true,
+                bounds: worldBounds,
+                attribution: '&copy; OpenStreetMap contributors'
             })
         };
 
-        // Default to OpenStreetMap Standard per PPT Slide 09
-        currentTileLayer = tileProviders.osm;
+        // Default to Esri World Street Map (HD English Labels)
+        currentTileLayer = tileProviders.esri;
         currentTileLayer.addTo(map);
+
+        // Add native Leaflet layer switcher icon at top-right
+        L.control.layers({
+            'HD English Sea Chart (Esri)': tileProviders.esri,
+            'CARTO Voyager (English)': tileProviders.voyager,
+            'Satellite Imagery (Esri)': tileProviders.satellite,
+            'OpenStreetMap Standard': tileProviders.osm
+        }, null, { position: 'topright' }).addTo(map);
+
+        // Update Waypoints badge
+        const wpCountEl = document.getElementById('shipment-waypoints-count');
+        if (wpCountEl) wpCountEl.innerText = `${cleanedWaypoints.length} Waypoints`;
 
         // 1. Origin Marker (Emerald Port Anchor)
         const originMarker = L.circleMarker([originLat, originLon], {
@@ -1077,27 +1057,29 @@
         movingVesselMarker.bindPopup(`
             <div class="p-1 font-sans text-xs min-w-[210px]">
                 <div class="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> KAPAL SEDANG BERLAYAR
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> UNDERWAY TRANSIT
                 </div>
                 <div class="text-sm font-extrabold text-slate-900 mt-0.5">${vesselName}</div>
                 <div class="text-[11px] text-slate-600 space-y-0.5 mt-1 border-t border-slate-100 pt-1">
-                    <div>Rute: <strong>{{ $shipment->origin->city }} &rarr; {{ $shipment->destination->city }}</strong></div>
-                    <div>Kecepatan: <strong>19.4 Knots (~36 km/h)</strong></div>
+                    <div>Route: <strong>{{ $shipment->origin->city }} &rarr; {{ $shipment->destination->city }}</strong></div>
+                    <div>Speed: <strong>14.8 kts (~27.4 km/h)</strong></div>
                     <div>Status: <span class="px-1.5 py-0.2 bg-amber-100 text-amber-900 font-bold rounded text-[10px]">{{ $shipment->current_status }}</span></div>
                 </div>
             </div>
         `);
 
-        // 8. Continuous Animation Loop (Shopee Smooth Movement)
-        const telemetryCoords = document.getElementById('telemetry-coords');
-        const telemetrySpeed = document.getElementById('telemetry-speed');
-        const telemetryLeg = document.getElementById('telemetry-leg');
+        // 8. Continuous Animation Loop (Smooth AIS Movement)
+        const telemetryBearing = document.getElementById('telemetry-bearing');
+        const telemetryProgress = document.getElementById('telemetry-progress');
         const shipBadgeText = document.getElementById('ship-badge-text');
 
         function animateSailingFrame() {
-            if (!isSailingPlaying) return;
+            if (!isSailingPlaying || densePoints.length === 0) return;
 
-            curStepIndex += sailingSpeed;
+            const stepInc = sailingSpeed >= 20 ? 3 : (sailingSpeed >= 5 ? 1 : 1);
+            if (sailingSpeed === 1 && Math.random() > 0.35) return; // gentle 1x pace
+
+            curStepIndex += stepInc;
             if (curStepIndex >= densePoints.length) {
                 curStepIndex = 0; // Smooth loop from origin
             }
@@ -1116,38 +1098,23 @@
                 const trailCoords = densePoints.slice(0, curStepIndex + 1).map(p => [p.lat, p.lng]);
                 traveledPolyline.setLatLngs(trailCoords);
 
-                // Update telemetry overlay
-                if (telemetryCoords) {
-                    telemetryCoords.innerText = `Lat: ${cur.lat.toFixed(4)}°, Lon: ${cur.lng.toFixed(4)}°`;
+                // Update AIS telemetry overlay
+                if (telemetryBearing) {
+                    telemetryBearing.innerText = `${cur.bearing.toFixed(1)}°`;
                 }
-                const progressPct = Math.round((curStepIndex / (densePoints.length - 1)) * 100);
+                const progressPct = densePoints.length > 1 ? ((curStepIndex / (densePoints.length - 1)) * 100) : 0;
+                if (telemetryProgress) {
+                    telemetryProgress.innerText = `${progressPct.toFixed(1)}%`;
+                }
                 if (shipBadgeText) {
-                    shipBadgeText.innerText = progressPct >= 98 ? 'Pesanan Tiba' : (progressPct <= 2 ? 'Memproses pesanan' : `Kapal Berlayar (${progressPct}%)`);
+                    const roundedPct = Math.round(progressPct);
+                    shipBadgeText.innerText = roundedPct >= 98 ? 'Arrived' : (roundedPct <= 2 ? 'Staged at Origin' : `Underway (${roundedPct}%)`);
                 }
             }
         }
 
-        // Run animation timer (approx 30fps for smooth gliding)
-        animationInterval = setInterval(animateSailingFrame, 35);
-
-        // 9. Interactive Control Buttons
-        const playPauseBtn = document.getElementById('btn-play-pause');
-        const playIcon = document.getElementById('play-icon');
-        const playText = document.getElementById('play-text');
-        if (playPauseBtn) {
-            playPauseBtn.addEventListener('click', function () {
-                isSailingPlaying = !isSailingPlaying;
-                if (isSailingPlaying) {
-                    playIcon.innerText = '⏸️';
-                    playText.innerText = 'Jeda';
-                    animationInterval = setInterval(animateSailingFrame, 35);
-                } else {
-                    playIcon.innerText = '▶️';
-                    playText.innerText = 'Lanjut';
-                    clearInterval(animationInterval);
-                }
-            });
-        }
+        // Run animation timer (approx 20fps for smooth gliding)
+        animationInterval = setInterval(animateSailingFrame, 50);
 
         const restartBtn = document.getElementById('btn-restart');
         if (restartBtn) {

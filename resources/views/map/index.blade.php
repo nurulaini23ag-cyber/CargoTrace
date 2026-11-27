@@ -123,60 +123,106 @@
         <!-- Leaflet Map Canvas (8 cols) -->
         <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden flex flex-col relative">
 
-            <!-- Floating Top Layer Switcher -->
-            <div class="absolute top-3 left-3 z-[1000] flex items-center gap-1.5 bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-md border border-slate-200 text-xs font-semibold text-slate-700">
-                <span class="text-[10px] font-bold px-2 text-slate-400 uppercase">MAP:</span>
-                <button type="button" onclick="switchBaseMap('voyager')" id="btn-layer-voyager"
-                        class="layer-toggle-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-xs cursor-pointer">
-                    🌊 Nautical Sea Chart (English)
-                </button>
-                <button type="button" onclick="switchBaseMap('osm')" id="btn-layer-osm"
-                        class="layer-toggle-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
-                    🗺️ Standard Map
-                </button>
-                <button type="button" onclick="switchBaseMap('satellite')" id="btn-layer-satellite"
-                        class="layer-toggle-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
-                    🛰️ Satellite Imagery
-                </button>
-            </div>
-
-            <!-- Floating Right Controls -->
-            <div class="absolute top-3 right-3 z-[1000] flex flex-col gap-1.5">
-                <button type="button" onclick="resetWorldView()" title="Reset Global View"
-                        class="w-9 h-9 bg-white hover:bg-slate-50 text-slate-700 rounded-xl shadow-md border border-slate-200 flex items-center justify-center font-bold text-sm transition cursor-pointer">
-                    🌐
-                </button>
-                <button type="button" onclick="locateMyShips()" title="Fit to My Fleet"
-                        class="w-9 h-9 bg-white hover:bg-slate-50 text-blue-600 rounded-xl shadow-md border border-slate-200 flex items-center justify-center font-bold text-sm transition cursor-pointer">
-                    🎯
-                </button>
-            </div>
-
-            <!-- Active Selected Vessel Banner (Floating at Top of Map Canvas) -->
-            <div id="active-vessel-banner" class="hidden absolute top-14 left-3 right-3 z-[1000] bg-slate-900/95 backdrop-blur-md text-white p-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center justify-between gap-3 transition-all duration-300">
-                <div class="flex items-center gap-2.5 truncate">
-                    <div id="banner-status-icon" class="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 bg-blue-600">
-                        🚢
+            <!-- Interactive Nautical Route & Vessel Tracking Map Header (HD English Labels + Single World) -->
+            <div class="px-5 py-3.5 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm md:text-base font-black text-slate-900 tracking-tight">
+                            Interactive Nautical Route &amp; Vessel Tracking Map
+                        </h2>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-600 border border-sky-200">
+                            HD English Labels
+                        </span>
                     </div>
-                    <div class="truncate">
-                        <div class="flex items-center gap-2">
-                            <span id="banner-vessel-name" class="font-black text-xs text-white">MV Nusantara Jaya</span>
-                            <span id="banner-status-badge" class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/30 text-blue-300 border border-blue-400/40">
-                                IN TRANSIT
-                            </span>
+                    <p class="text-[11px] text-slate-500 mt-0.5">
+                        Leaflet.js &middot; Navigable Sea Lanes &middot; Live Vessel Position &amp; Bearing
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="map-waypoints-badge" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                        {{ count($mapShipments) }} Vessels
+                    </span>
+                    <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                        Single World
+                    </span>
+                </div>
+            </div>
+
+            <!-- Map Container Wrapper -->
+            <div class="relative w-full">
+
+                <!-- Floating Top-Left Quick Actions -->
+                <div class="absolute top-3 left-14 z-[1000] flex items-center gap-1.5">
+                    <button type="button" onclick="resetWorldView()" title="Reset Global View"
+                            class="px-2.5 py-1.5 bg-white/95 backdrop-blur-md hover:bg-slate-50 text-slate-700 rounded-lg shadow-md border border-slate-200 flex items-center gap-1 font-bold text-[11px] transition cursor-pointer">
+                        <span>🌐</span> Reset View
+                    </button>
+                    <button type="button" onclick="locateMyShips()" title="Fit to My Fleet"
+                            class="px-2.5 py-1.5 bg-white/95 backdrop-blur-md hover:bg-slate-50 text-sky-700 rounded-lg shadow-md border border-slate-200 flex items-center gap-1 font-bold text-[11px] transition cursor-pointer">
+                        <span>🎯</span> Fit Fleet
+                    </button>
+                </div>
+
+                <!-- Active Selected Vessel Banner (Floating at Top of Map Canvas) -->
+                <div id="active-vessel-banner" class="hidden absolute top-14 left-3 right-14 z-[1000] bg-slate-900/95 backdrop-blur-md text-white p-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center justify-between gap-3 transition-all duration-300">
+                    <div class="flex items-center gap-2.5 truncate">
+                        <div id="banner-status-icon" class="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 bg-blue-600">
+                            🚢
                         </div>
-                        <div id="banner-route-text" class="text-[11px] text-slate-300 mt-0.5 truncate font-medium">
-                            Origin Port &rarr; Destination Port &bull; International Sea Lane
+                        <div class="truncate">
+                            <div class="flex items-center gap-2">
+                                <span id="banner-vessel-name" class="font-black text-xs text-white">MV Nusantara Jaya</span>
+                                <span id="banner-status-badge" class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/30 text-blue-300 border border-blue-400/40">
+                                    IN TRANSIT
+                                </span>
+                            </div>
+                            <div id="banner-route-text" class="text-[11px] text-slate-300 mt-0.5 truncate font-medium">
+                                Origin Port &rarr; Destination Port &bull; International Sea Lane
+                            </div>
                         </div>
+                    </div>
+                    <button type="button" onclick="clearActiveVesselFocus()" class="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[11px] font-bold shrink-0 cursor-pointer border border-white/20 transition">
+                        ✕ Close Focus
+                    </button>
+                </div>
+
+                <!-- The Leaflet Canvas -->
+                <div id="fleet-google-map" class="h-[640px] w-full z-10 bg-[#aad3df]"></div>
+
+                <!-- Floating Bottom AIS TELEMETRY HUD Bar -->
+                <div id="ais-telemetry-bar" class="absolute bottom-4 left-4 right-4 z-[1000] bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-[11px] font-black tracking-wider uppercase text-emerald-400">AIS TELEMETRY</span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-4 md:gap-6 text-[11px]">
+                        <div>
+                            <div class="text-[9px] text-slate-400 font-semibold uppercase">Steaming Speed</div>
+                            <div class="font-black text-amber-400 font-mono" id="ais-speed">14.8 kts</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-400 font-semibold uppercase">Course Bearing</div>
+                            <div class="font-black text-sky-400 font-mono" id="ais-bearing">0.0°</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-400 font-semibold uppercase">Navigational Fairway</div>
+                            <div class="font-bold text-white" id="ais-fairway">Underway Transit</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-400 font-semibold uppercase">Voyage Progress</div>
+                            <div class="font-black text-emerald-400 font-mono" id="ais-progress">0.0%</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 bg-slate-800/90 p-1 rounded-xl border border-slate-700 text-[10px]">
+                        <button type="button" onclick="setAisSimSpeed(1)" id="sim-btn-1" class="sim-speed-btn px-2 py-1 rounded-lg font-bold transition bg-sky-600 text-white cursor-pointer">1x Real</button>
+                        <button type="button" onclick="setAisSimSpeed(5)" id="sim-btn-5" class="sim-speed-btn px-2 py-1 rounded-lg font-bold transition text-slate-300 hover:text-white cursor-pointer">5x Cruise</button>
+                        <button type="button" onclick="setAisSimSpeed(20)" id="sim-btn-20" class="sim-speed-btn px-2 py-1 rounded-lg font-bold transition text-slate-300 hover:text-white cursor-pointer">20x Sim</button>
+                        <button type="button" onclick="setAisSimSpeed(0)" id="sim-btn-0" class="sim-speed-btn px-2 py-1 rounded-lg font-bold transition text-slate-300 hover:text-white cursor-pointer">Pause</button>
                     </div>
                 </div>
-                <button type="button" onclick="clearActiveVesselFocus()" class="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[11px] font-bold shrink-0 cursor-pointer border border-white/20 transition">
-                    ✕ Close Focus
-                </button>
             </div>
-
-            <!-- The Leaflet Canvas with OpenStreetMap -->
-            <div id="fleet-google-map" class="h-[680px] w-full z-10"></div>
 
             <!-- Map Footer Legend Bar -->
             <div class="p-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 flex flex-wrap items-center justify-between gap-3 px-4">
@@ -201,7 +247,7 @@
                     </span>
                 </div>
                 <div class="text-[10px] text-slate-400 font-mono">
-                    OpenStreetMap Contributors &bull; CARTO Voyager &bull; Leaflet Maritime Layer
+                    Tiles &copy; Esri &mdash; OpenStreetMap &amp; contributors &bull; Single World Maritime Layer
                 </div>
             </div>
         </div>
@@ -432,6 +478,83 @@
         }
     }
 
+    let aisSimSpeed = 1; // 1x Real, 5x Cruise, 20x Sim, 0 = Pause
+    let aisSimInterval = null;
+    let simRoutePoints = [];
+    let simCurrentIndex = 0;
+
+    /**
+     * Update AIS Telemetry HUD bar with active vessel details
+     */
+    function updateAisTelemetryHud(s, bearingDeg, progressPct) {
+        const speedEl = document.getElementById('ais-speed');
+        const bearingEl = document.getElementById('ais-bearing');
+        const fairwayEl = document.getElementById('ais-fairway');
+        const progressEl = document.getElementById('ais-progress');
+        const wpBadge = document.getElementById('map-waypoints-badge');
+
+        if (speedEl) {
+            const kts = (s.status_type === 'DELIVERED' || s.status_type === 'STAGED') ? '0.0 kts' : (s.status_type === 'DELAYED' ? '4.2 kts' : '14.8 kts');
+            speedEl.innerText = kts;
+        }
+        if (bearingEl) {
+            bearingEl.innerText = `${parseFloat(bearingDeg || 0).toFixed(1)}°`;
+        }
+        if (fairwayEl) {
+            if (s.status_type === 'DELIVERED') fairwayEl.innerText = 'Berthed at Destination';
+            else if (s.status_type === 'STAGED') fairwayEl.innerText = 'Staged at Origin';
+            else if (s.status_type === 'DELAYED') fairwayEl.innerText = 'Delayed in Corridor';
+            else fairwayEl.innerText = 'Underway Transit';
+        }
+        if (progressEl) {
+            progressEl.innerText = `${parseFloat(progressPct || 0).toFixed(1)}%`;
+        }
+        if (wpBadge && s.sea_route) {
+            wpBadge.innerText = `${s.sea_route.length} Waypoints`;
+        }
+    }
+
+    /**
+     * Set AIS Simulation Speed (1x Real, 5x Cruise, 20x Sim, 0 Pause)
+     */
+    function setAisSimSpeed(speed) {
+        aisSimSpeed = speed;
+        document.querySelectorAll('.sim-speed-btn').forEach(btn => {
+            btn.className = 'sim-speed-btn px-2 py-1 rounded-lg font-bold transition text-slate-300 hover:text-white cursor-pointer';
+        });
+        const activeBtn = document.getElementById('sim-btn-' + speed);
+        if (activeBtn) {
+            activeBtn.className = 'sim-speed-btn px-2 py-1 rounded-lg font-bold transition bg-sky-600 text-white cursor-pointer';
+        }
+    }
+
+    /**
+     * Interpolate dense points along sea_route for smooth AIS steaming animation
+     */
+    function buildDenseRoute(routeCoords) {
+        if (!routeCoords || routeCoords.length < 2) return [];
+        const dense = [];
+        const stepsPerSeg = 25;
+        for (let i = 0; i < routeCoords.length - 1; i++) {
+            const p1 = routeCoords[i];
+            const p2 = routeCoords[i + 1];
+            const dLat = p2[0] - p1[0];
+            const dLng = p2[1] - p1[1];
+            const bearing = (Math.atan2(dLng, dLat) * 180 / Math.PI + 360) % 360;
+            for (let k = 0; k < stepsPerSeg; k++) {
+                const t = k / stepsPerSeg;
+                dense.push({
+                    lat: p1[0] + t * dLat,
+                    lng: p1[1] + t * dLng,
+                    bearing: bearing
+                });
+            }
+        }
+        const last = routeCoords[routeCoords.length - 1];
+        dense.push({ lat: last[0], lng: last[1], bearing: dense.length > 0 ? dense[dense.length - 1].bearing : 0 });
+        return dense;
+    }
+
     /**
      * Select a shipment, isolate its route, and fly map smoothly to it
      */
@@ -448,6 +571,16 @@
         if (activeCard) {
             activeCard.classList.add('ring-4', 'ring-blue-500', 'shadow-xl');
             activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Update AIS Telemetry HUD Bar
+        updateAisTelemetryHud(s, s.current_position.bearing || 0, s.progress_percent || 0);
+
+        // Setup dense route for live AIS simulation
+        simRoutePoints = buildDenseRoute(s.sea_route);
+        if (simRoutePoints.length > 0) {
+            const pct = Math.max(0, Math.min(100, s.progress_percent || 0));
+            simCurrentIndex = Math.floor((pct / 100) * (simRoutePoints.length - 1));
         }
 
         // Update top active vessel banner
@@ -688,38 +821,59 @@
 
     document.addEventListener('DOMContentLoaded', function () {
 
-        // 1. Initialize Map Instance
+        // 1. Initialize Single World Map Instance (No repeating horizontal continents)
+        const worldBounds = L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180));
         fleetMap = L.map('fleet-google-map', {
             center: [15.0, 45.0],
-            zoom: 3,
+            zoom: 2,
             minZoom: 2,
             maxZoom: 18,
-            zoomControl: false,
-            worldCopyJump: true
+            zoomControl: true,
+            maxBounds: worldBounds,
+            maxBoundsViscosity: 1.0,
+            worldCopyJump: false
         });
 
-        L.control.zoom({ position: 'bottomright' }).addTo(fleetMap);
-
-        // 2. Base Tile Layers (CARTO Voyager default with English labels)
+        // 2. Base Tile Layers (Esri World Street Map HD English Labels as Default)
         baseTileLayers = {
+            esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 18,
+                noWrap: true,
+                bounds: worldBounds,
+                attribution: 'Tiles &copy; Esri &mdash; OpenStreetMap &amp; contributors, DeLorme, NAVTEQ, TomTom'
+            }),
             voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19,
+                noWrap: true,
+                bounds: worldBounds,
                 subdomains: 'abcd',
-                attribution: '&copy; <a href="https://carto.com/">CARTO</a> &bull; OpenStreetMap contributors'
-            }),
-            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
+                attribution: '&copy; CARTO &bull; OpenStreetMap contributors'
             }),
             satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 18,
-                attribution: '&copy; Esri World Imagery'
+                noWrap: true,
+                bounds: worldBounds,
+                attribution: 'Tiles &copy; Esri World Imagery'
+            }),
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                noWrap: true,
+                bounds: worldBounds,
+                attribution: '&copy; OpenStreetMap contributors'
             })
         };
 
-        // Default to CARTO Voyager: high-resolution English cartography designed for global navigation
-        currentBaseLayer = baseTileLayers.voyager;
+        // Default to Esri World Street Map: crisp HD English Labels matching international maritime chart
+        currentBaseLayer = baseTileLayers.esri;
         currentBaseLayer.addTo(fleetMap);
+
+        // Add native Leaflet layer switcher icon at top-right
+        L.control.layers({
+            'HD English Sea Chart (Esri)': baseTileLayers.esri,
+            'CARTO Voyager (English)': baseTileLayers.voyager,
+            'Satellite Imagery (Esri)': baseTileLayers.satellite,
+            'OpenStreetMap Standard': baseTileLayers.osm
+        }, null, { position: 'topright' }).addTo(fleetMap);
 
         globalBounds = L.latLngBounds();
 
@@ -1041,6 +1195,30 @@
                 if (badge) badge.innerText = `${matchCount} Vessels`;
             });
         }
+
+        // 5. Real-time AIS Steaming Simulation Tick (for focused vessel)
+        let simTickCounter = 0;
+        aisSimInterval = setInterval(() => {
+            if (aisSimSpeed === 0 || !currentFocusShipmentId || simRoutePoints.length < 2) return;
+            const s = fleetShipments.find(item => item.id === currentFocusShipmentId);
+            if (!s || s.status_type === 'DELIVERED') return;
+
+            simTickCounter++;
+            // 1x = step every 10 ticks (~1.5s), 5x = step every 2 ticks, 20x = step +2 every tick
+            if (aisSimSpeed === 1 && simTickCounter % 10 !== 0) return;
+            if (aisSimSpeed === 5 && simTickCounter % 2 !== 0) return;
+
+            const stepInc = aisSimSpeed === 20 ? 2 : 1;
+            simCurrentIndex = (simCurrentIndex + stepInc) % simRoutePoints.length;
+
+            const pt = simRoutePoints[simCurrentIndex];
+            const vMarker = vesselMarkers[s.id];
+            if (pt && vMarker) {
+                vMarker.setLatLng([pt.lat, pt.lng]);
+                const pct = (simCurrentIndex / (simRoutePoints.length - 1)) * 100;
+                updateAisTelemetryHud(s, pt.bearing, pct);
+            }
+        }, 150);
     });
 </script>
 @endsection

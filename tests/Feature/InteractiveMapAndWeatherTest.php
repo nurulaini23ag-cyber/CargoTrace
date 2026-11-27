@@ -284,9 +284,9 @@ class InteractiveMapAndWeatherTest extends TestCase
 
         $response = $this->get("/shipments/{$shipment->id}");
         $response->assertStatus(200);
-        $response->assertSee('Posisi Kargo Saat Ini');
+        $response->assertSee('AIS TELEMETRY');
         $response->assertSee('Malacca Strait - Northbound Transit Lane');
-        $response->assertSee('Geographic Maritime Tracking Map');
+        $response->assertSee('Interactive Nautical Route');
     }
 
     public function test_map_displays_google_maps_clean_style_with_leaflet_and_openstreetmap(): void
@@ -295,8 +295,8 @@ class InteractiveMapAndWeatherTest extends TestCase
 
         $response = $this->get('/map');
         $response->assertStatus(200);
-        $response->assertSee('LEAFLET + OPENSTREETMAP');
-        $response->assertSee('Standard Map');
+        $response->assertSee('HD English Labels');
+        $response->assertSee('OpenStreetMap Standard');
         $response->assertSee('All Vessels');
         $response->assertSee('In Transit');
         $response->assertSee('West Sector (Europe)');
