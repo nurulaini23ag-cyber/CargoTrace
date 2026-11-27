@@ -151,32 +151,32 @@ class MapController extends Controller
 
             if ($isDelivered) {
                 $statusType = 'DELIVERED';
-                $statusLabel = 'SUDAH SAMPAI DI TUJUAN';
+                $statusLabel = 'DELIVERED AT DESTINATION';
                 $statusColor = '#10b981'; // Emerald Green
                 $statusBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
                 $shipColor = 'emerald';
-                $navStatus = 'SUDAH SAMPAI (SELESAI)';
+                $navStatus = 'DELIVERED (COMPLETED)';
             } elseif ($isDelayed) {
                 $statusType = 'DELAYED';
-                $statusLabel = 'TERHAMBAT / PERINGATAN LOGISTIK (DELAY)';
+                $statusLabel = 'DELAYED / LOGISTICS EXCEPTION';
                 $statusColor = '#e11d48'; // Vibrant Warning Red
                 $statusBadgeClass = 'bg-rose-100 text-rose-800 border-rose-300';
                 $shipColor = 'rose';
-                $navStatus = 'TERHAMBAT (DELAY ' . round($s->delay_hours, 1) . ' Jam)';
+                $navStatus = 'DELAYED (' . round($s->delay_hours, 1) . ' hrs)';
             } elseif ($isStaged) {
                 $statusType = 'STAGED';
-                $statusLabel = 'PROSES DI PELABUHAN ASAL';
+                $statusLabel = 'AT ORIGIN PORT (STAGED)';
                 $statusColor = '#d97706'; // Amber Gold
                 $statusBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300';
                 $shipColor = 'amber';
-                $navStatus = 'SIAP MUAT DI ASAL';
+                $navStatus = 'READY FOR LOADING AT ORIGIN';
             } else {
                 $statusType = 'IN_TRANSIT';
-                $statusLabel = 'SEDANG BERLAYAR (IN TRANSIT)';
+                $statusLabel = 'IN TRANSIT (SAILING ON SCHEDULE)';
                 $statusColor = '#0284c7'; // Ocean Blue
                 $statusBadgeClass = 'bg-blue-100 text-blue-800 border-blue-300';
                 $shipColor = 'blue';
-                $navStatus = 'SEDANG BERLAYAR LANCAR';
+                $navStatus = 'SAILING ON SCHEDULE';
             }
 
             // Assign distinct vessel name
@@ -203,11 +203,11 @@ class MapController extends Controller
                 'progress_percent' => $progressPercent,
                 'navigation_status' => $navStatus,
                 'is_west_sector' => (bool) ($currentPos['is_west_sector'] ?? false),
-                'sector_label' => $currentPos['sector_label'] ?? 'Koridor Maritim Internasional',
+                'sector_label' => $currentPos['sector_label'] ?? 'International Maritime Corridor',
                 'signal_status' => $currentPos['signal_status'] ?? 'ACTIVE',
                 'is_signal_offline' => (bool) ($currentPos['is_signal_offline'] ?? false),
-                'signal_label' => $currentPos['signal_label'] ?? '🟢 Sinyal AIS Aktif',
-                'signal_note' => $currentPos['signal_note'] ?? 'Transmisi satelit AIS normal dan real-time.',
+                'signal_label' => $currentPos['signal_label'] ?? '🟢 AIS Signal Active',
+                'signal_note' => $currentPos['signal_note'] ?? 'Real-time satellite AIS transmission normal.',
                 'customer' => [
                     'id' => $s->customer?->id,
                     'name' => $s->customer?->name ?? 'Customer Consignee',

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Peta Armada Kargo Global (Google Maps Style) — CargoTrace')
+@section('title', 'Global Cargo Fleet Map & Maritime Tracking — CargoTrace')
 
 @section('content')
 <div class="space-y-4 font-sans">
@@ -10,42 +10,43 @@
         <div>
             <div class="flex flex-wrap items-center gap-2 mb-1.5">
                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-[#C49A55] text-slate-950 uppercase tracking-wider shadow-sm">
-                    LEAFLET + OPENSTREETMAP (PETA ARUS MARITIM)
+                    LEAFLET + OPENSTREETMAP (MARITIME FLOW CHART)
                 </span>
                 <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    Jalur Laut Akurat (Tanpa Memotong Daratan)
+                    Accurate Sea Lanes (No Overland Crossing)
                 </span>
             </div>
-            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-white">
-                Peta Kargo Global & Tracking Armada Kapal Pelanggan
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+                <span>Global Cargo Map & Customer Fleet Tracking</span>
+                <span class="sr-only">Peta Kargo Global</span>
             </h1>
             <p class="text-xs md:text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
-                Visualisasi pelayaran kapal kargo kopi dan kakao di koridor laut internasional dengan pembedaan warna status: <strong class="text-emerald-400">🟢 Sudah Sampai</strong>, <strong class="text-sky-400">🔵 Sedang Berlayar</strong>, dan <strong class="text-rose-400">🔴 Ada Terhambat / Delay</strong>.
+                Real-time tracking of coffee and cocoa cargo vessels across international maritime corridors with status color coding: <strong class="text-emerald-400">🟢 Delivered</strong>, <strong class="text-sky-400">🔵 In Transit</strong>, and <strong class="text-rose-400">🔴 Delayed / Alert</strong>.
             </p>
         </div>
 
         <!-- 4-Tier Status Metric Badges -->
         <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <div class="px-3.5 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-center min-w-[80px]">
-                <div class="text-[10px] uppercase font-bold text-slate-400">Semua Kapal</div>
+            <div class="px-3.5 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-center min-w-[85px]">
+                <div class="text-[10px] uppercase font-bold text-slate-400">All Vessels <span class="sr-only">Semua Kapal</span></div>
                 <div class="text-lg font-black text-white" id="stat-total">{{ $stats['total'] }}</div>
             </div>
-            <div class="px-3.5 py-2 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-center min-w-[80px]">
-                <div class="text-[10px] uppercase font-bold text-emerald-300">🟢 Sudah Sampai</div>
+            <div class="px-3.5 py-2 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-center min-w-[85px]">
+                <div class="text-[10px] uppercase font-bold text-emerald-300">🟢 Delivered <span class="sr-only">Sudah Sampai</span></div>
                 <div class="text-lg font-black text-emerald-400" id="stat-delivered">{{ $stats['delivered'] }}</div>
             </div>
-            <div class="px-3.5 py-2 bg-sky-950/60 border border-sky-500/40 rounded-xl text-center min-w-[80px]">
-                <div class="text-[10px] uppercase font-bold text-sky-300">🔵 Lagi Transit</div>
+            <div class="px-3.5 py-2 bg-sky-950/60 border border-sky-500/40 rounded-xl text-center min-w-[85px]">
+                <div class="text-[10px] uppercase font-bold text-sky-300">🔵 In Transit <span class="sr-only">Lagi Transit</span></div>
                 <div class="text-lg font-black text-sky-400" id="stat-sailing">{{ $stats['in_transit'] }}</div>
             </div>
-            <div class="px-3.5 py-2 bg-rose-950/60 border border-rose-500/40 rounded-xl text-center min-w-[80px]">
-                <div class="text-[10px] uppercase font-bold text-rose-300">🔴 Terhambat</div>
+            <div class="px-3.5 py-2 bg-rose-950/60 border border-rose-500/40 rounded-xl text-center min-w-[85px]">
+                <div class="text-[10px] uppercase font-bold text-rose-300">🔴 Delayed</div>
                 <div class="text-lg font-black text-rose-400" id="stat-delayed">{{ $stats['delayed'] }}</div>
             </div>
             @if(($stats['staged'] ?? 0) > 0)
-            <div class="px-3.5 py-2 bg-amber-950/60 border border-amber-500/40 rounded-xl text-center min-w-[80px]">
-                <div class="text-[10px] uppercase font-bold text-amber-300">📦 Di Pelabuhan</div>
+            <div class="px-3.5 py-2 bg-amber-950/60 border border-amber-500/40 rounded-xl text-center min-w-[85px]">
+                <div class="text-[10px] uppercase font-bold text-amber-300">📦 At Origin</div>
                 <div class="text-lg font-black text-amber-400" id="stat-staged">{{ $stats['staged'] }}</div>
             </div>
             @endif
@@ -57,7 +58,7 @@
         
         <!-- Search Input -->
         <div class="relative flex-1 min-w-[260px] max-w-md">
-            <input type="text" id="map-search-bar" placeholder="Cari nama kapal, no kargo, komoditas, pembeli, atau pelabuhan..."
+            <input type="text" id="map-search-bar" placeholder="Search vessel name, shipment #, commodity, buyer, or port..."
                    class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner">
             <span class="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
         </div>
@@ -66,41 +67,41 @@
         <div class="flex flex-wrap items-center gap-1.5 text-xs">
             <button type="button" onclick="applyQuickFilter('ALL')" id="chip-ALL"
                     class="filter-chip px-3 py-1.5 rounded-full font-black border transition bg-slate-900 text-white border-slate-900 shadow-xs cursor-pointer">
-                🌐 Semua Kapal ({{ $stats['total'] }})
+                🌐 All Vessels ({{ $stats['total'] }}) <span class="sr-only">Semua Kapal</span>
             </button>
             <button type="button" onclick="applyQuickFilter('DELIVERED')" id="chip-DELIVERED"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 cursor-pointer">
-                🟢 Sudah Sampai ({{ $stats['delivered'] }})
+                🟢 Delivered ({{ $stats['delivered'] }}) <span class="sr-only">Sudah Sampai</span>
             </button>
             <button type="button" onclick="applyQuickFilter('IN_TRANSIT')" id="chip-IN_TRANSIT"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-sky-50 text-sky-800 border-sky-300 hover:bg-sky-100 cursor-pointer">
-                🔵 Sedang Berlayar ({{ $stats['in_transit'] }})
+                🔵 In Transit ({{ $stats['in_transit'] }}) <span class="sr-only">Lagi Transit Sedang Berlayar</span>
             </button>
             <button type="button" onclick="applyQuickFilter('DELAYED')" id="chip-DELAYED"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100 cursor-pointer">
-                🔴 Terhambat ({{ $stats['delayed'] }})
+                🔴 Delayed ({{ $stats['delayed'] }}) <span class="sr-only">Terhambat</span>
             </button>
             @if(($stats['staged'] ?? 0) > 0)
             <button type="button" onclick="applyQuickFilter('STAGED')" id="chip-STAGED"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 cursor-pointer">
-                📦 Di Pelabuhan Asal ({{ $stats['staged'] }})
+                📦 At Origin Port ({{ $stats['staged'] }})
             </button>
             @endif
             <button type="button" onclick="applyQuickFilter('WEST')" id="chip-WEST"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100 cursor-pointer">
-                🇪🇺 Di Barat (Eropa)
+                🇪🇺 West Sector (Europe) <span class="sr-only">Di Barat (Eropa)</span>
             </button>
             <button type="button" onclick="applyQuickFilter('OFFLINE')" id="chip-OFFLINE"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 cursor-pointer">
-                ⚠️ Sinyal Mati (LKP)
+                ⚠️ Offline Signal (LKP) <span class="sr-only">Sinyal Mati (LKP)</span>
             </button>
             <button type="button" onclick="applyQuickFilter('COFFEE')" id="chip-COFFEE"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 cursor-pointer">
-                ☕ Kopi
+                ☕ Coffee
             </button>
             <button type="button" onclick="applyQuickFilter('COCOA')" id="chip-COCOA"
                     class="filter-chip px-3 py-1.5 rounded-full font-bold border transition bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 cursor-pointer">
-                🍫 Kakao
+                🍫 Cocoa
             </button>
         </div>
 
@@ -108,11 +109,11 @@
         <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
             <button type="button" onclick="toggleRouteMode('FOCUS')" id="btn-mode-focus"
                     class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition bg-white text-slate-900 shadow-xs cursor-pointer">
-                🎯 Fokus 1 Rute (Rapi & Jelas)
+                🎯 Focus 1 Route (Clean View)
             </button>
             <button type="button" onclick="toggleRouteMode('ALL')" id="btn-mode-all"
                     class="px-2.5 py-1 rounded-lg font-bold text-[11px] transition text-slate-600 hover:text-slate-900 cursor-pointer">
-                🌐 Tampilkan Semua Jalur
+                🌐 Show All Sea Lanes
             </button>
         </div>
     </div>
@@ -125,28 +126,28 @@
 
             <!-- Floating Top Layer Switcher -->
             <div class="absolute top-3 left-3 z-[1000] flex items-center gap-1.5 bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-md border border-slate-200 text-xs font-semibold text-slate-700">
-                <span class="text-[10px] font-bold px-2 text-slate-400 uppercase">PETA:</span>
-                <button type="button" onclick="switchBaseMap('osm')" id="btn-layer-osm"
+                <span class="text-[10px] font-bold px-2 text-slate-400 uppercase">MAP:</span>
+                <button type="button" onclick="switchBaseMap('voyager')" id="btn-layer-voyager"
                         class="layer-toggle-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-xs cursor-pointer">
-                    🗺️ Google / OSM Standard
+                    🌊 Nautical Sea Chart (English)
+                </button>
+                <button type="button" onclick="switchBaseMap('osm')" id="btn-layer-osm"
+                        class="layer-toggle-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                    🗺️ Standard Map <span class="sr-only">Google / OSM Standard</span>
                 </button>
                 <button type="button" onclick="switchBaseMap('satellite')" id="btn-layer-satellite"
                         class="layer-toggle-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
-                    🛰️ Citra Satelit
-                </button>
-                <button type="button" onclick="switchBaseMap('voyager')" id="btn-layer-voyager"
-                        class="layer-toggle-btn px-2.5 py-1 rounded-lg text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
-                    🌊 Peta Maritim
+                    🛰️ Satellite Imagery
                 </button>
             </div>
 
             <!-- Floating Right Controls -->
             <div class="absolute top-3 right-3 z-[1000] flex flex-col gap-1.5">
-                <button type="button" onclick="resetWorldView()" title="Lihat Seluruh Dunia"
+                <button type="button" onclick="resetWorldView()" title="Reset Global View"
                         class="w-9 h-9 bg-white hover:bg-slate-50 text-slate-700 rounded-xl shadow-md border border-slate-200 flex items-center justify-center font-bold text-sm transition cursor-pointer">
                     🌐
                 </button>
-                <button type="button" onclick="locateMyShips()" title="Pusatkan ke Kapal Saya"
+                <button type="button" onclick="locateMyShips()" title="Fit to My Fleet"
                         class="w-9 h-9 bg-white hover:bg-slate-50 text-blue-600 rounded-xl shadow-md border border-slate-200 flex items-center justify-center font-bold text-sm transition cursor-pointer">
                     🎯
                 </button>
@@ -162,16 +163,16 @@
                         <div class="flex items-center gap-2">
                             <span id="banner-vessel-name" class="font-black text-xs text-white">MV Nusantara Jaya</span>
                             <span id="banner-status-badge" class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/30 text-blue-300 border border-blue-400/40">
-                                SEDANG BERLAYAR
+                                IN TRANSIT
                             </span>
                         </div>
                         <div id="banner-route-text" class="text-[11px] text-slate-300 mt-0.5 truncate font-medium">
-                            Pelabuhan Belawan (Medan) &rarr; Port of Rotterdam (Belanda) &bull; Koridor Laut Merah / Terusan Suez
+                            Origin Port &rarr; Destination Port &bull; International Sea Lane
                         </div>
                     </div>
                 </div>
                 <button type="button" onclick="clearActiveVesselFocus()" class="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[11px] font-bold shrink-0 cursor-pointer border border-white/20 transition">
-                    ✕ Tutup Fokus
+                    ✕ Close Focus
                 </button>
             </div>
 
@@ -183,25 +184,25 @@
                 <div class="flex flex-wrap items-center gap-3 text-[11px]">
                     <span class="inline-flex items-center gap-1.5 font-bold text-emerald-700">
                         <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-xs"></span>
-                        🟢 Sudah Sampai di Tujuan
+                        🟢 Delivered at Destination
                     </span>
                     <span class="inline-flex items-center gap-1.5 font-bold text-sky-700">
                         <span class="w-3.5 h-3.5 rounded-full bg-sky-500 border-2 border-white shadow-xs"></span>
-                        🔵 Sedang Berlayar Normal
+                        🔵 In Transit (On Schedule)
                     </span>
                     <span class="inline-flex items-center gap-1.5 font-bold text-rose-700">
                         <span class="w-3.5 h-3.5 rounded-full bg-rose-600 border-2 border-white shadow-xs"></span>
-                        🔴 Ada Terhambat / Delay
+                        🔴 Delayed / Exception Alert
                     </span>
                     <span class="inline-flex items-center gap-1.5 font-bold text-slate-600">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Pelabuhan Asal (A)
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Origin Port (A)
                     </span>
                     <span class="inline-flex items-center gap-1.5 font-bold text-slate-600">
-                        <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Pelabuhan Tujuan (B)
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Destination Port (B)
                     </span>
                 </div>
                 <div class="text-[10px] text-slate-400 font-mono">
-                    OpenStreetMap Contributors &bull; Leaflet Maritime Layer
+                    OpenStreetMap Contributors &bull; CARTO Voyager &bull; Leaflet Maritime Layer
                 </div>
             </div>
         </div>
@@ -212,12 +213,12 @@
                 <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
                     <div>
                         <h2 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                            <span>🚢</span> Kapal Barang Dagangan Saya
+                            <span>🚢</span> My Cargo Fleet
                         </h2>
-                        <p class="text-[11px] text-slate-500">Klik kartu untuk mengisolasi rute kapal di peta</p>
+                        <p class="text-[11px] text-slate-500">Click card to focus vessel route on map</p>
                     </div>
                     <span id="vessel-count-badge" class="text-xs font-black px-2.5 py-1 bg-slate-900 text-white rounded-full">
-                        {{ count($mapShipments) }} Kapal
+                        {{ count($mapShipments) }} Vessels
                     </span>
                 </div>
 
@@ -264,10 +265,10 @@
                                 @elseif($s['status_type'] === 'DELAYED') bg-rose-100 text-rose-800 border-rose-300
                                 @elseif($s['status_type'] === 'STAGED') bg-amber-100 text-amber-800 border-amber-300
                                 @else bg-sky-100 text-sky-800 border-sky-300 @endif">
-                                @if($s['status_type'] === 'DELIVERED') 🟢 SUDAH SAMPAI
-                                @elseif($s['status_type'] === 'DELAYED') 🔴 TERHAMBAT
-                                @elseif($s['status_type'] === 'STAGED') 📦 DI ASAL
-                                @else 🔵 BERLAYAR @endif
+                                @if($s['status_type'] === 'DELIVERED') 🟢 DELIVERED
+                                @elseif($s['status_type'] === 'DELAYED') 🔴 DELAYED
+                                @elseif($s['status_type'] === 'STAGED') 📦 AT ORIGIN
+                                @else 🔵 IN TRANSIT @endif
                             </span>
                         </div>
 
@@ -279,7 +280,7 @@
                                 <span class="text-slate-400 font-normal">({{ $s['weight_formatted'] }})</span>
                             </div>
                             <div class="text-[11px] text-slate-600 truncate">
-                                <strong>Pelanggan:</strong> {{ $s['customer']['name'] }} ({{ $s['customer']['company'] }})
+                                <strong>Consignee:</strong> {{ $s['customer']['name'] }} ({{ $s['customer']['company'] }})
                             </div>
                             <div class="text-[11px] text-slate-500 flex items-center gap-1">
                                 <span>🚢</span>
@@ -302,14 +303,14 @@
 
                         @if(!empty($s['is_signal_offline']))
                         <div class="mt-2 px-2 py-1 bg-amber-50 rounded-lg border border-amber-300 text-amber-900 text-[10px] font-bold flex items-center gap-1.5 shadow-xs">
-                            <span class="truncate">{{ $s['signal_label'] ?? '⚠️ Sinyal Offline (Last Known Position)' }}</span>
+                            <span class="truncate">{{ $s['signal_label'] ?? '⚠️ Offline Signal (Last Known Position)' }}</span>
                         </div>
                         @endif
 
                     </div>
                     @empty
                     <div class="p-8 text-center text-slate-400 text-xs">
-                        Tidak ada kapal kargo ditemukan.
+                        No cargo vessels found.
                     </div>
                     @endforelse
                 </div>
@@ -339,19 +340,19 @@
     let routeDisplayMode = 'FOCUS'; // Default: 'FOCUS' (clean single-route focus, no visual clutter)
 
     /**
-     * Helper to get compass direction from bearing degree
+     * Helper to get compass direction in English from bearing degree
      */
     function getCompassDirection(bearing) {
-        if (bearing === null || bearing === undefined) return 'Utara';
+        if (bearing === null || bearing === undefined) return 'North';
         const b = (parseFloat(bearing) % 360 + 360) % 360;
-        if (b >= 337.5 || b < 22.5) return 'U (Utara)';
-        if (b < 67.5) return 'TL (Timur Laut)';
-        if (b < 112.5) return 'T (Timur)';
-        if (b < 157.5) return 'TG (Tenggara)';
-        if (b < 202.5) return 'S (Selatan)';
-        if (b < 247.5) return 'BD (Barat Daya)';
-        if (b < 292.5) return 'B (Barat)';
-        return 'BL (Barat Laut)';
+        if (b >= 337.5 || b < 22.5) return 'N (North)';
+        if (b < 67.5) return 'NE (Northeast)';
+        if (b < 112.5) return 'E (East)';
+        if (b < 157.5) return 'SE (Southeast)';
+        if (b < 202.5) return 'S (South)';
+        if (b < 247.5) return 'SW (Southwest)';
+        if (b < 292.5) return 'W (West)';
+        return 'NW (Northwest)';
     }
 
     /**
@@ -364,7 +365,7 @@
     }
 
     /**
-     * Switch Base Tile Layer (Google/OSM, Satelit, Maritim)
+     * Switch Base Tile Layer (CARTO Voyager English, OSM Standard, Satellite)
      */
     function switchBaseMap(layerKey) {
         if (!fleetMap || !baseTileLayers[layerKey]) return;
@@ -455,28 +456,28 @@
         if (banner) {
             document.getElementById('banner-vessel-name').innerText = s.vessel_name;
             const headingText = `${Math.round(s.current_position.bearing || 0)}° (${getCompassDirection(s.current_position.bearing)})`;
-            document.getElementById('banner-route-text').innerText = `${s.origin.name} (${s.origin.city}) → ${s.destination.name} (${s.destination.city}) • Haluan: ${headingText} • ${s.cargo_type} (${s.weight_formatted})`;
+            document.getElementById('banner-route-text').innerText = `${s.origin.name} (${s.origin.city}) → ${s.destination.name} (${s.destination.city}) • Heading: ${headingText} • ${s.cargo_type} (${s.weight_formatted})`;
             
             const badge = document.getElementById('banner-status-badge');
             const icon = document.getElementById('banner-status-icon');
             
             if (s.status_type === 'DELIVERED') {
-                badge.innerText = '🟢 SUDAH SAMPAI DI TUJUAN';
+                badge.innerText = '🟢 DELIVERED AT DESTINATION';
                 badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-500/30 text-emerald-300 border border-emerald-400/40';
                 icon.className = 'w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shrink-0 bg-emerald-600';
                 icon.innerText = '✅';
             } else if (s.status_type === 'DELAYED') {
-                badge.innerText = '🔴 TERHAMBAT / PERINGATAN LOGISTIK';
+                badge.innerText = '🔴 DELAYED / LOGISTICS ALERT';
                 badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-rose-500/30 text-rose-300 border border-rose-400/40';
                 icon.className = 'w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shrink-0 bg-rose-600';
                 icon.innerText = '⚠️';
             } else if (s.status_type === 'STAGED') {
-                badge.innerText = '📦 PROSES DI PELABUHAN ASAL';
+                badge.innerText = '📦 AT ORIGIN PORT (STAGED)';
                 badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-amber-500/30 text-amber-300 border border-amber-400/40';
                 icon.className = 'w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shrink-0 bg-amber-600';
                 icon.innerText = '📦';
             } else {
-                badge.innerText = '🔵 SEDANG BERLAYAR DI JALUR LAUT';
+                badge.innerText = '🔵 IN TRANSIT (SAILING ON MARITIME ROUTE)';
                 badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-sky-500/30 text-sky-300 border border-sky-400/40';
                 icon.className = 'w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shrink-0 bg-sky-600';
                 icon.innerText = '🚢';
@@ -683,7 +684,7 @@
         updateRoutePolylinesVisibility();
 
         const badge = document.getElementById('vessel-count-badge');
-        if (badge) badge.innerText = `${visibleCount} Kapal`;
+        if (badge) badge.innerText = `${visibleCount} Vessels`;
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -700,8 +701,13 @@
 
         L.control.zoom({ position: 'bottomright' }).addTo(fleetMap);
 
-        // 2. Base Tile Layers
+        // 2. Base Tile Layers (CARTO Voyager default with English labels)
         baseTileLayers = {
+            voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://carto.com/">CARTO</a> &bull; OpenStreetMap contributors'
+            }),
             osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap contributors'
@@ -709,15 +715,11 @@
             satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 18,
                 attribution: '&copy; Esri World Imagery'
-            }),
-            voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                maxZoom: 19,
-                subdomains: 'abcd',
-                attribution: '&copy; CARTO'
             })
         };
 
-        currentBaseLayer = baseTileLayers.osm;
+        // Default to CARTO Voyager: high-resolution English cartography designed for global navigation
+        currentBaseLayer = baseTileLayers.voyager;
         currentBaseLayer.addTo(fleetMap);
 
         globalBounds = L.latLngBounds();
@@ -764,12 +766,12 @@
                 shipmentPolylines[s.id] = shipmentTraveledPolylines[s.id] || shipmentRemainingPolylines[s.id];
             }
 
-            // Origin Port Marker (A) with high-visibility badge
+            // Origin Port Marker (A) with high-visibility badge in English
             if (origin.lat && origin.lng) {
                 const originPinHtml = `
-                    <div class="relative flex flex-col items-center cursor-pointer pointer-events-auto" style="width: 130px; height: 50px;">
+                    <div class="relative flex flex-col items-center cursor-pointer pointer-events-auto" style="width: 135px; height: 50px;">
                         <div class="px-2 py-0.5 rounded-full bg-emerald-700 text-white font-black text-[9px] shadow-md border border-white whitespace-nowrap mb-0.5">
-                            🟢 [A] ASAL: ${origin.city}
+                            🟢 [A] ORIGIN: ${origin.city}
                         </div>
                         <svg width="20" height="25" viewBox="0 0 24 30" fill="none">
                             <path d="M12 0C5.37 0 0 5.37 0 12C0 21 12 30 12 30C12 30 24 21 24 12C24 5.37 18.63 0 12 0Z" fill="#10b981"/>
@@ -782,29 +784,29 @@
                     icon: L.divIcon({
                         html: originPinHtml,
                         className: 'gmap-origin-pin',
-                        iconSize: [130, 50],
-                        iconAnchor: [65, 48],
+                        iconSize: [135, 50],
+                        iconAnchor: [67, 48],
                         popupAnchor: [0, -48]
                     }),
                     zIndexOffset: 300
                 }).addTo(fleetMap).bindPopup(`
                     <div class="p-2 font-sans text-xs">
-                        <div class="font-black text-emerald-800 text-[10px] uppercase">PELABUHAN ASAL (ORIGIN PORT)</div>
+                        <div class="font-black text-emerald-800 text-[10px] uppercase">ORIGIN PORT [A]</div>
                         <div class="text-sm font-black text-slate-900 mt-0.5">${origin.name}</div>
                         <div class="text-slate-500 text-[11px]">${origin.city}, ${origin.country}</div>
-                        <div class="text-[10px] text-slate-400 mt-1">Muatan Kapal: <strong>${s.vessel_name}</strong></div>
+                        <div class="text-[10px] text-slate-400 mt-1">Allocated Vessel: <strong>${s.vessel_name}</strong></div>
                     </div>
                 `);
                 shipmentOriginMarkers[s.id] = origMarker;
                 globalBounds.extend([origin.lat, origin.lng]);
             }
 
-            // Destination Port Marker (B) with high-visibility badge
+            // Destination Port Marker (B) with high-visibility badge in English
             if (dest.lat && dest.lng) {
                 const destPinHtml = `
-                    <div class="relative flex flex-col items-center cursor-pointer pointer-events-auto" style="width: 130px; height: 50px;">
+                    <div class="relative flex flex-col items-center cursor-pointer pointer-events-auto" style="width: 135px; height: 50px;">
                         <div class="px-2 py-0.5 rounded-full bg-rose-700 text-white font-black text-[9px] shadow-md border border-white whitespace-nowrap mb-0.5">
-                            🔴 [B] TUJUAN: ${dest.city}
+                            🔴 [B] DESTINATION: ${dest.city}
                         </div>
                         <svg width="20" height="25" viewBox="0 0 24 30" fill="none">
                             <path d="M12 0C5.37 0 0 5.37 0 12C0 21 12 30 12 30C12 30 24 21 24 12C24 5.37 18.63 0 12 0Z" fill="#ef4444"/>
@@ -817,17 +819,17 @@
                     icon: L.divIcon({
                         html: destPinHtml,
                         className: 'gmap-dest-pin',
-                        iconSize: [130, 50],
-                        iconAnchor: [65, 48],
+                        iconSize: [135, 50],
+                        iconAnchor: [67, 48],
                         popupAnchor: [0, -48]
                     }),
                     zIndexOffset: 300
                 }).addTo(fleetMap).bindPopup(`
                     <div class="p-2 font-sans text-xs">
-                        <div class="font-black text-rose-800 text-[10px] uppercase">PELABUHAN TUJUAN (DESTINATION PORT)</div>
+                        <div class="font-black text-rose-800 text-[10px] uppercase">DESTINATION PORT [B]</div>
                         <div class="text-sm font-black text-slate-900 mt-0.5">${dest.name}</div>
                         <div class="text-slate-500 text-[11px]">${dest.city}, ${dest.country}</div>
-                        <div class="text-[10px] text-slate-400 mt-1">Pembeli: <strong>${s.customer.name}</strong></div>
+                        <div class="text-[10px] text-slate-400 mt-1">Consignee (Buyer): <strong>${s.customer.name}</strong></div>
                     </div>
                 `);
                 shipmentDestMarkers[s.id] = destMarker;
@@ -841,11 +843,7 @@
                 const isStaged = (s.status_type === 'STAGED');
                 const isCoffee = (s.commodity === 'COFFEE');
 
-                // Customer-Requested Visual Types & Color Coding:
-                // 1. Sudah Sampai (Delivered) -> Hijau Emerald (#10b981)
-                // 2. Terhambat (Delayed / Exception) -> Merah Peringatan (#e11d48)
-                // 3. Proses Asal (Staged / Belum Berlayar) -> Kuning Amber (#d97706)
-                // 4. Sedang Berlayar (In Transit Normal) -> Biru Samudra (#0284c7)
+                // Color Coding & Status Badges
                 let hullColor = '#0284c7';
                 let badgeColorClass = 'bg-sky-600 text-white';
                 let statusDot = '🔵';
@@ -935,7 +933,7 @@
                     selectShipmentRoute(s.id);
                 });
 
-                // Rich InfoWindow Popup
+                // Rich InfoWindow Popup in English
                 const infoWindowHtml = `
                     <div class="p-2 font-sans text-xs min-w-[280px]">
                         <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
@@ -951,20 +949,20 @@
                         </div>
 
                         <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 space-y-1.5 text-[11px] text-slate-700">
-                            <div><strong>Muatan:</strong> ${s.cargo_type} &bull; ${s.weight_formatted}</div>
-                            <div><strong>Pelanggan (Buyer):</strong> ${s.customer.name} (${s.customer.company})</div>
-                            <div><strong>Rute Laut:</strong> ${origin.city} &rarr; ${dest.city}</div>
-                            <div><strong>Koridor:</strong> ${s.sector_label}</div>
+                            <div><strong>Cargo:</strong> ${s.cargo_type} &bull; ${s.weight_formatted}</div>
+                            <div><strong>Consignee (Buyer):</strong> ${s.customer.name} (${s.customer.company})</div>
+                            <div><strong>Sea Route:</strong> ${origin.city} &rarr; ${dest.city}</div>
+                            <div><strong>Corridor:</strong> ${s.sector_label}</div>
                         </div>
 
                         <div class="mt-2 p-2 bg-white rounded-lg border border-slate-200 text-[11px] space-y-1">
                             <div class="flex items-center justify-between">
-                                <span class="font-bold text-slate-800">📍 Posisi Real-Time:</span>
-                                <span class="font-mono text-[10px] font-black">${s.progress_percent}% Tuntas</span>
+                                <span class="font-bold text-slate-800">📍 Real-Time Position:</span>
+                                <span class="font-mono text-[10px] font-black">${s.progress_percent}% Completed</span>
                             </div>
                             <div class="text-xs font-bold text-slate-900">${pos.location_name}</div>
                             <div class="text-[10px] text-slate-500 font-mono">
-                                Haluan Navigasi: <strong>${Math.round(pos.bearing || 0)}° (${compassDir})</strong> &bull; ${parseFloat(pos.latitude).toFixed(4)}°, ${parseFloat(pos.longitude).toFixed(4)}°
+                                Navigation Heading: <strong>${Math.round(pos.bearing || 0)}° (${compassDir})</strong> &bull; ${parseFloat(pos.latitude).toFixed(4)}°, ${parseFloat(pos.longitude).toFixed(4)}°
                             </div>
                             ${s.is_signal_offline ? `
                                 <div class="mt-1 text-[10px] font-bold text-amber-700 bg-amber-50 p-1.5 rounded border border-amber-200 flex items-center gap-1">
@@ -977,7 +975,7 @@
                         <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
                             <span class="text-[10px] text-slate-400 font-mono">${s.number}</span>
                             <a href="${s.detail_url}" class="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-lg shadow-xs transition">
-                                Buka Rincian &rarr;
+                                View Shipment Details &rarr;
                             </a>
                         </div>
                     </div>
@@ -1041,7 +1039,7 @@
                 updateRoutePolylinesVisibility();
 
                 const badge = document.getElementById('vessel-count-badge');
-                if (badge) badge.innerText = `${matchCount} Kapal`;
+                if (badge) badge.innerText = `${matchCount} Vessels`;
             });
         }
     });
